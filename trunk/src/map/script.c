@@ -13922,6 +13922,7 @@ BUILDIN_FUNC(getmonsterinfo)
 		case 19: script_pushint(st,mob->status.race); break;
 		case 20: script_pushint(st,mob->status.def_ele); break;
 		case 21: script_pushint(st,mob->status.mode); break;
+		case 22: script_pushint(st,mob->mexp); break;
 		default: script_pushint(st,-1); //wrong Index
 	}
 	return 0;

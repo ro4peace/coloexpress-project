@@ -3061,6 +3061,7 @@ Valid types are listed in const.txt:
 	MOB_RANGE2	16		MOB_RANGE3	17
 	MOB_SIZE	18		MOB_RACE	19
 	MOB_ELEMENT	20		MOB_MODE	21
+	MOB_MVPEXP	22
 
 Check sample in doc/sample/getmonsterinfo.txt
 
