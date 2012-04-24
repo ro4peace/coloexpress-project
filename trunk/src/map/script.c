@@ -13938,7 +13938,7 @@ BUILDIN_FUNC(checkvending) // check vending [Nab4]
 		sd = script_rid2sd(st);
 
 	if(sd)
-		script_pushint(st,sd->state.vending);
+		script_pushint(st, sd->state.autotrade ? 2 : sd->state.vending);
 	else
 		script_pushint(st,0);
 

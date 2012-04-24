@@ -1,5 +1,20 @@
 Date	Added
 
+2012/04/23
+	* Merged changes up to rAthena 15876.
+	- Did some cleaning up and enabled all job lines in job_db 1 and 2.
+	- Added some more jobs to the pre-re and re exp tables.
+	- Enabled all typeable job changing names for the job change command.
+	- Did some major skill tree updates.
+2012/04/20
+	* Merged changes up to rAthena 15873.
+	- Added support for all 3rd jobs in the pre-re exp table.
+	- Added some extra data here and there that will be used in the future.
+	- Changed 'checkvending' to return 2 if player is using @autotrade.
+	- Added some job coding to the source to prepare for the adding of baby 3rd's and other expanded jobs.
+	- Removed Baby Taekwon, Baby Star Gladiator, and Baby Soul Linker MAPID's code since their pointless.
+	- Used spaces so everything lines up (people might use different Tab Size in their text editors).
+	- Fixed deep sleep lullaby no longer resets its duration when cast on a target already with deep sleep lullaby.
 2012/04/18
 	* Added some Kagerou and Oboro skills.
 	* Added some EP14.2 items that use the Eclage skills.
@@ -11,10 +26,10 @@ Date	Added
 2012/04/17
 	* Separate job_db1.txt to folder pre-re and re.
 	* Fixed renewal update status equipment atk.
-	* Fixed renewal calculate base atk.
+	* Fixed renewal calculate base atk. [tu@]
 	* Fixed renewal update status window.
 	* Removed negative check for Frenzy'ed characters.
-	* Added some values of a monster in getmonsterinfo().
-	* Added support client 2011-11-22aRagexeRE.
+	* Add some values of a monster in getmonsterinfo().
+	* Add support client 2011-11-22aRagexeRE.
 	* Fixed shield ASPD penalty.
-	* Added rAthena server svn 15869.
+	* Add rAthena server svn 15869.
