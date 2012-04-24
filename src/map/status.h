@@ -592,6 +592,9 @@ typedef enum sc_type {
 	SC_SOULCOLD, //510
 	SC_HAWKEYES,
 	SC_ODINS_POWER,
+
+	SC_JYUMONJIKIRI = 780,
+
 	SC_MAX, //Automatically updated max, used in for's to check we are within bounds.
 } sc_type;
 
@@ -1465,7 +1468,7 @@ struct status_data {
 		max_hp, max_sp;
 	unsigned short
 		str, agi, vit, int_, dex, luk,
-		batk,
+		batk, equipment_atk,
 		matk_min, matk_max,
 		speed,
 		amotion, adelay, dmotion,

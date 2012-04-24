@@ -1294,6 +1294,13 @@ int skill_additional_effect (struct block_list* src, struct block_list *bl, int 
 			status_change_end(bl, SC_UNLIMITEDHUMMINGVOICE, INVALID_TIMER);
 		}
 		break;
+	case KO_JYUMONJIKIRI:
+		sc_start(bl,SC_JYUMONJIKIRI,100,skilllv,skill_get_time2(skillid,skilllv));
+		break;
+	case KO_SETSUDAN:
+		status_change_end(bl, SC_SPIRIT, -1);//Remove Soul Link When Hit. [Rytech]
+		break;
+
 	}
 
 	if (md && battle_config.summons_trigger_autospells && md->master_id && md->special_state.ai)
@@ -3315,6 +3322,8 @@ int skill_castend_damage_id (struct block_list* src, struct block_list *bl, int 
 	case SR_GENTLETOUCH_QUIET:
 	case WM_SEVERE_RAINSTORM_MELEE:
 	case WM_GREAT_ECHO:
+	case KO_JYUMONJIKIRI:
+	case KO_SETSUDAN:
 		skill_attack(BF_WEAPON,src,src,bl,skillid,skilllv,tick,flag);
 	break;
 
@@ -3538,6 +3547,8 @@ int skill_castend_damage_id (struct block_list* src, struct block_list *bl, int 
 	case SR_RIDEINLIGHTNING:
 	case WM_REVERBERATION:
 	case WM_SOUND_OF_DESTRUCTION:
+	case KO_BAKURETSU:
+	case KO_HAPPOKUNAI:
 		if( flag&1 )
 		{	//Recursive invocation
 			// skill_area_temp[0] holds number of targets in area
@@ -3777,6 +3788,7 @@ int skill_castend_damage_id (struct block_list* src, struct block_list *bl, int 
 	case NPC_SMOKING:
 	case GS_FLING:
 	case NJ_ZENYNAGE:
+	case KO_MUCHANAGE:
 		skill_attack(BF_MISC,src,src,bl,skillid,skilllv,tick,flag);
 		break;
 	/**
@@ -5190,6 +5202,7 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, in
 	case SR_SKYNETBLOW:
 	case SR_RAMPAGEBLASTER:
 	case SR_HOWLINGOFLION:
+	case KO_HAPPOKUNAI:
 		skill_area_temp[1] = 0;
 		clif_skill_nodamage(src,bl,skillid,skilllv,1);
 		i = map_foreachinrange(skill_area_sub, bl, skill_get_splash(skillid, skilllv), splash_target(src), 
@@ -5346,6 +5359,7 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, in
 		break;
 	case TF_HIDING:
 	case ST_CHASEWALK:
+	case KO_YAMIKUMO:
 		if (tsce)
 		{
 			clif_skill_nodamage(src,bl,skillid,-1,status_change_end(bl, type, INVALID_TIMER)); //Hide skill-scream animation.
@@ -11317,6 +11331,7 @@ int skill_check_condition_castbegin(struct map_session_data* sd, short skill, sh
 		break;
 
 	case NJ_ZENYNAGE:
+	case KO_MUCHANAGE:
 		if(sd->status.zeny < require.zeny) {
 			clif_skill_fail(sd,skill,USESKILL_FAIL_MONEY,0);
 			return 0;
@@ -11908,7 +11923,7 @@ struct skill_condition skill_get_requirement(struct map_session_data* sd, short 
 	case BS_MAXIMIZE:		case NV_TRICKDEAD:	case TF_HIDING:			case AS_CLOAKING:		case CR_AUTOGUARD:
 	case ML_AUTOGUARD:		case CR_DEFENDER:	case ML_DEFENDER:		case ST_CHASEWALK:		case PA_GOSPEL:
 	case CR_SHRINK:			case TK_RUN:		case GS_GATLINGFEVER:	case TK_READYCOUNTER:	case TK_READYDOWN:
-	case TK_READYSTORM:		case TK_READYTURN:	case SG_FUSION:
+	case TK_READYSTORM:		case TK_READYTURN:	case SG_FUSION:		case KO_YAMIKUMO:
 		if( sc && sc->data[status_skill2sc(skill)] )
 			return req;
 	}

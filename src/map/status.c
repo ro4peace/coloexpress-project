@@ -666,6 +666,8 @@ void initChangeTables(void)
 	//set_sc( GN_FIRE_EXPANSION_SMOKE_POWDER, SC_SMOKEPOWDER , SI_FIRE_EXPANSION_SMOKE_POWDER, SCB_NONE );
 	//set_sc( GN_FIRE_EXPANSION_TEAR_GAS    , SC_TEARGAS     , SI_FIRE_EXPANSION_TEAR_GAS    , SCB_NONE );
 	//set_sc( GN_MANDRAGORA                 , SC_MANDRAGORA  , SI_MANDRAGORA                 , SCB_INT );
+	set_sc( KO_YAMIKUMO          , SC_HIDING          , SI_HIDING          , SCB_NONE );
+	set_sc( KO_JYUMONJIKIRI      , SC_JYUMONJIKIRI    , SI_KO_JYUMONJIKIRI , SCB_NONE );
 
 	// Storing the target job rather than simply SC_SPIRIT simplifies code later on.
 	SkillStatusChangeTable[SL_ALCHEMIST]   = (sc_type)MAPID_ALCHEMIST,
@@ -1510,6 +1512,7 @@ int status_check_skilluse(struct block_list *src, struct block_list *target, int
 			case RG_RAID:
 			case NJ_SHADOWJUMP:
 			case NJ_KIRIKAGE:
+			case KO_YAMIKUMO:
 				break;
 			default:
 				//Non players can use all skills while hidden.
@@ -1694,6 +1697,9 @@ static unsigned short status_base_atk(const struct block_list *bl, const struct 
 		str = status->str;
 		dex = status->dex;
 	}
+#ifdef RENEWAL
+	str += dex/5;
+#else
 	//Normally only players have base-atk, but homunc have a different batk
 	// equation, hinting that perhaps non-players should use this for batk.
 	// [Skotlex]
@@ -1701,6 +1707,7 @@ static unsigned short status_base_atk(const struct block_list *bl, const struct 
 	str += dstr*dstr;
 	if (bl->type == BL_PC)
 		str+= dex/5 + status->luk/5;
+#endif
 	return cap_value(str, 0, USHRT_MAX);
 }
 
@@ -1745,9 +1752,9 @@ void status_calc_misc(struct block_list *bl, struct status_data *status, int lev
 	status->matk_max = status_base_matk_max(status);
 
 #ifdef RENEWAL // renewal formulas
-	status->hit += level + status->dex + status->luk/3 + 175; //base level + ( every 1 dex = +1 hit ) + (every 3 luk = +1 hit) + 175
-	status->flee += level + status->agi + status->luk/5 + 100; //base level + ( every 1 agi = +1 flee ) + (every 5 luk = +1 flee) + 100
-	status->def2 += (int)(((float)level + status->vit)/2 + ((float)status->agi/5)); //base level + (every 2 agi = +1 def) + (every 5 agi = +1 def)
+	status->hit += level + status->dex + status->luk/3 + 175; //base level + (every 1 dex = +1 hit) + (every 3 luk = +1 hit) + 175
+	status->flee += level + status->agi + status->luk/5 + 100; //base level + (every 1 agi = +1 flee) + (every 5 luk = +1 flee) + 100
+	status->def2 += (int)(((float)level + status->vit)/2 + ((float)status->agi/5)); //(every 2 base level = +1 def) + (every 2 vit = +1 def) + (every 5 agi = +1 def)
 	status->mdef2 += (int)(status->int_ + ((float)level/4) + ((float)status->dex/5) + ((float)status->vit/5)); //(every 4 base level = +1 mdef) + (every 1 int = +1 mdef) + (every 5 dex = +1 mdef) + (every 5 vit = +1 mdef)
 #else
 	status->hit += level + status->dex;
@@ -1773,7 +1780,7 @@ void status_calc_misc(struct block_list *bl, struct status_data *status, int lev
 		status->batk = status_base_atk(bl, status);
 
 #ifdef RENEWAL // renewal attack bonus formula
-	status->batk += (int)((float)status->luk/3 + (float)level/4); //(every 3 luk = + 1ATK) + (every 4 base level = +1 ATK)
+	status->batk += (int)((float)status->luk/3 + (float)level/4); //(every 3 luk = +1 ATK) + (every 4 base level = +1 ATK)
 #endif
 
 	if (status->cri)
@@ -2079,12 +2086,12 @@ static unsigned int status_base_pc_maxsp(struct map_session_data* sd, struct sta
 	unsigned int val;
 
 	val = 10 + sd->status.base_level*sp_coefficient[pc_class2idx(sd->status.class_)]/100;
-	val += val * status->int_/100;
+	val += val * status->int_/100; // +1% per each point of INT
 
 	if (sd->class_&JOBL_UPPER)
-		val += val * 25/100;
+		val += val * 25/100; //Trans classes get a 25% sp bonus
 	else if (sd->class_&JOBL_BABY)
-		val -= val * 30/100;
+		val -= val * 30/100; //Baby classes get a 30% sp penalty
 	if ((sd->class_&MAPID_UPPERMASK) == MAPID_TAEKWON && sd->status.base_level >= 90 && pc_famerank(sd->status.char_id, MAPID_TAEKWON))
 		val *= 3; //Triple max SP for top ranking Taekwons over level 90.
 
@@ -3638,17 +3645,17 @@ void status_calc_bl_(struct block_list* bl, enum scb_flag flag, bool first)
 			clif_updatestatus(sd,SP_ATK1);
 
 		if(b_status.def != status->def)
-			clif_updatestatus(sd,SP_DEF1);
+			clif_updatestatus(sd,SP_DEF2);
 
 		if(b_status.rhw.atk2 != status->rhw.atk2 || b_status.lhw.atk2 != status->lhw.atk2
 #ifdef RENEWAL
-		|| b_status.rhw.atk != status->rhw.atk || b_status.lhw.atk != status->lhw.atk
+		|| b_status.rhw.atk != status->rhw.atk || b_status.lhw.atk != status->lhw.atk || b_status.equipment_atk != status->equipment_atk
 #endif
 			)
 			clif_updatestatus(sd,SP_ATK2);
 
 		if(b_status.def2 != status->def2)
-			clif_updatestatus(sd,SP_DEF2);
+			clif_updatestatus(sd,SP_DEF1);
 		if(b_status.flee2 != status->flee2)
 			clif_updatestatus(sd,SP_FLEE2);
 		if(b_status.cri != status->cri)
@@ -3658,9 +3665,9 @@ void status_calc_bl_(struct block_list* bl, enum scb_flag flag, bool first)
 		if(b_status.matk_min != status->matk_min)
 			clif_updatestatus(sd,SP_MATK2);
 		if(b_status.mdef != status->mdef)
-			clif_updatestatus(sd,SP_MDEF1);
-		if(b_status.mdef2 != status->mdef2)
 			clif_updatestatus(sd,SP_MDEF2);
+		if(b_status.mdef2 != status->mdef2)
+			clif_updatestatus(sd,SP_MDEF1);
 		if(b_status.rhw.range != status->rhw.range)
 			clif_updatestatus(sd,SP_ATTACKRANGE);
 		if(b_status.max_hp != status->max_hp)
@@ -10176,7 +10183,7 @@ int status_readdb(void)
 	// read databases
 	//
 
-	sv_readdb(db_path, "job_db1.txt",   ',', 5+MAX_WEAPON_TYPE, 5+MAX_WEAPON_TYPE, -1,                            &status_readdb_job1);
+	sv_readdb(db_path, DBPATH"job_db1.txt",   ',', 5+MAX_WEAPON_TYPE, 5+MAX_WEAPON_TYPE, -1,                            &status_readdb_job1);
 	sv_readdb(db_path, "job_db2.txt",   ',', 1,                 1+MAX_LEVEL,       -1,                            &status_readdb_job2);
 	sv_readdb(db_path, "size_fix.txt",  ',', MAX_WEAPON_TYPE,   MAX_WEAPON_TYPE,    ARRAYLENGTH(atkmods),         &status_readdb_sizefix);
 #ifdef RENEWAL

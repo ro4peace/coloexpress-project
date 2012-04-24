@@ -473,9 +473,8 @@ struct map_session_data {
 
 };
 
-//Update this max as necessary. 55 is the value needed for Super Baby currently
-//Raised to 75 due to 3rds
-#define MAX_SKILL_TREE 75
+//Update this max as necessary. Raised from 80 to 84 as the Extended Super Novice needs it. [Rytech]
+#define MAX_SKILL_TREE 84
 //Total number of classes (for data storage)
 #define CLASS_COUNT (JOB_MAX - JOB_NOVICE_HIGH + JOB_MAX_BASIC)
 
@@ -614,7 +613,7 @@ enum e_pc_permission {
 #define pc_isinvisible(sd)    ( (sd)->sc.option&OPTION_INVISIBLE )
 #define pc_is50overweight(sd) ( (sd)->weight*100 >= (sd)->max_weight*battle_config.natural_heal_weight_rate )
 #define pc_is90overweight(sd) ( (sd)->weight*10 >= (sd)->max_weight*9 )
-#define pc_maxparameter(sd)   ( (sd)->class_&JOBL_THIRD ? battle_config.max_third_parameter : (sd)->class_&JOBL_BABY ? battle_config.max_baby_parameter : battle_config.max_parameter )
+#define pc_maxparameter(sd)   ( ((((sd)->class_&MAPID_UPPERMASK) == MAPID_KAGEROUOBORO) || (sd)->class_&JOBL_THIRD ? ((sd)->class_&JOBL_BABY ? battle_config.max_baby_third_parameter : battle_config.max_third_parameter) : ((sd)->class_&JOBL_BABY ? battle_config.max_baby_parameter : battle_config.max_parameter)) )
 /** 
  * Ranger
  **/
@@ -648,14 +647,17 @@ enum e_pc_permission {
 #define pcdb_checkid(class_) \
 ( \
 	( (class_) >= JOB_NOVICE      && (class_) <  JOB_MAX_BASIC   ) \
-||	( (class_) >= JOB_NOVICE_HIGH && (class_) <= JOB_SOUL_LINKER ) \
-||	( (class_) >= JOB_RUNE_KNIGHT && (class_) <  JOB_MAX         ) \
+||	( (class_) >= JOB_NOVICE_HIGH && (class_) <=  JOB_DARK_COLLECTOR         ) \
+||	( (class_) >= JOB_RUNE_KNIGHT && (class_) <=  JOB_MECHANIC_T2         ) \
+||	( (class_) >= JOB_BABY_RUNE && (class_) <=  JOB_BABY_MECHANIC2         ) \
+||	( (class_) >= JOB_SUPER_NOVICE_E && (class_) <=  JOB_SUPER_BABY_E         ) \
+||	( (class_) >= JOB_KAGEROU && (class_) <  JOB_MAX         ) \
 )
 
 // clientside atk display macros (values to the left/right of the "+")
 #ifdef RENEWAL
 #define pc_leftside_atk(sd) ((sd)->battle_status.batk)
-#define pc_rightside_atk(sd) ((sd)->battle_status.rhw.atk + (sd)->battle_status.lhw.atk + (sd)->battle_status.rhw.atk2 + (sd)->battle_status.lhw.atk2)
+#define pc_rightside_atk(sd) ((sd)->battle_status.rhw.atk + (sd)->battle_status.lhw.atk + (sd)->battle_status.rhw.atk2 + (sd)->battle_status.lhw.atk2 + (sd)->battle_status.equipment_atk)
 #else
 #define pc_leftside_atk(sd) ((sd)->battle_status.batk + (sd)->battle_status.rhw.atk + (sd)->battle_status.lhw.atk)
 #define pc_rightside_atk(sd) ((sd)->battle_status.rhw.atk2 + (sd)->battle_status.lhw.atk2)

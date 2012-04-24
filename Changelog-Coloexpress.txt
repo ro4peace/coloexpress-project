@@ -1,0 +1,20 @@
+Date	Added
+
+2012/04/18
+	* Added some Kagerou and Oboro skills.
+	* Added some EP14.2 items that use the Eclage skills.
+	* Added some skill entry's for ECL_SNOWFLIP, ECL_PEONYMAMY,ECL_SADAGUI, ECL_SEQUOIADUST, and ECLAGE_RECALL.
+	* Fixed stat points needed when it's maxparameter.
+	* Added max_baby_third_parameter to set max parameter to 3rd baby classes.
+	* Added 3rd Baby Class, Kagerou and Oboro jobs.
+	* Added the Extended Super Novice and Extended Super Baby jobs.
+2012/04/17
+	* Separate job_db1.txt to folder pre-re and re.
+	* Fixed renewal update status equipment atk.
+	* Fixed renewal calculate base atk.
+	* Fixed renewal update status window.
+	* Removed negative check for Frenzy'ed characters.
+	* Added some values of a monster in getmonsterinfo().
+	* Added support client 2011-11-22aRagexeRE.
+	* Fixed shield ASPD penalty.
+	* Added rAthena server svn 15869.

@@ -57,6 +57,13 @@
 //6298,Crushed_Pumpkin,Crushed Pumpkin,3,0,,0,,,,,,,,,,,,,{},{},{}
 //6299,Worn_Fabric,Worn Fabric,3,0,,0,,,,,,,,,,,,,{},{},{}
 
+// 5 items below work through skills. Last 4 have a reuse delay of 5 seconds. All have a weight of 1.
+//2916,Elven_Wing,Elven Wing,		<-- Accessory that gives the ECLAGE_RETURN skill. Weights 1 weight and requires base level 90. No defense.
+//12812,Snow_Flip,Snow Flip		<-- Cures Burning, Bleeding, Deep Sleep, Sleep
+//12813,Peony_Mamy,Peony Mamy		<-- Cures Freeze, Freezing, Crystallization
+//12814,Sadagui,Sadagui			<-- Cures Stun, Fear, Chaos, Hallucination
+//12815,Sequoia_Dust,Sequoia Dust	<-- Cures Petrification, Blind, Curse, Poison, Reverse Orcish
+
 // Old Tuxedo and Wedding Dress, will display the outfit when worn.
 //==================================================================
 //2338,Wedding_Dress,Wedding Dress,5,43000,,500,,0,,0,0xFFFFFFFE,7,0,16,,0,1,0,{},{ setoption Option_Wedding,1; },{ setoption Option_Wedding,0; }
