@@ -470,6 +470,8 @@ extern struct Battle_Config
 	// rAthena
 	int max_third_parameter, max_baby_third_parameter;
 	int atcommand_max_stat_bypass;
+
+	int mvp_tomb_enabled;
 } battle_config;
 
 void do_init_battle(void);

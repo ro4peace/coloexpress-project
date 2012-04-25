@@ -1,6 +1,13 @@
 Date	Added
 
 2012/04/25
+	* Merged changes up to rAthena 15910.
+	- Fixed SR_GENTLETOUCH_CURE now acts with official behavior.
+	- Fixed Spell Fist being unable to cast while casting a bolt skill.
+	- Added mvp tomb system.
+	- Amended existing commands to display additional information when no parameters are entered.
+	- Updated the at-command system to exchange hard-coded messages with those from the at-command help file.
+	- Accidentally enabled @warp to level 0 players.
 	* Merged changes up to rAthena 15905.
 	- Made branding more consistent.
 	- Updated the at-command help file with some minor adjustments.
