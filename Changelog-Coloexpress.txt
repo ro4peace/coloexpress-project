@@ -1,6 +1,17 @@
 Date	Added
 
 2012/04/25
+	* Merged changes up to rAthena 15920.
+	- Also Added missing Elemental SC damage boosts.
+	- Fixed bugreport:5605 Spell Fist should now work properly.
+	- Fixed Vacuum Extreme not assigning units and additionally not preventing movement.
+	- Added missing units from pre-renewal skill_unit_db.txt.
+	- Updated Mob AI's target check with new status effects: SC_BITE, SC_VACUUM_EXTREME, SC_CRYSTALIZE, SC_THORNSTRAP and SC__MANHOLE.
+	- Fixed Firewalk and Electric Walk now function properly.
+	- Changed @pettalk /dice to roll random 1-6 (before it always rolled 1).
+	- Added more /emotions to pet emotion processing.
+	- Removed the clif_skill_fail so it doesn't spam them with a message (the client limits spamming clif_parse_Emotion, but not spamming @commands).
+	- Applied renewal skill changes.
 	* Merged changes up to rAthena 15910.
 	- Fixed SR_GENTLETOUCH_CURE now acts with official behavior.
 	- Fixed Spell Fist being unable to cast while casting a bolt skill.
