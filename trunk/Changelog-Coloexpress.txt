@@ -1,6 +1,13 @@
 Date	Added
 
 2012/04/25
+	* Merged changes up to rAthena 15896.
+	- Fixed a SQL error from r4.
+	- Updated the item_db.txt document to show info for latest job masks, upper masks, and ammo types.
+	- Add CMakeLists.txt changes missing from r4
+	- Renamed upgrade_svn15885_log.sql to upgrade_svn15885.sql and removed a leftover from the original file.
+	- Increased MAX_PRODUCE accordingly to new entries in produce_db.txt.
+	- Accidentally committed this with the rest.
 	* Merged changes up to rAthena 15885.
 	- Fixed typo in Makefile.in (unterminated string).
 	- Initial support for Genetic, Sorcerer and Elemental Summons.

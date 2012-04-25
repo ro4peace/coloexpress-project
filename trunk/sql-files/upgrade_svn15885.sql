@@ -1,5 +1,3 @@
-﻿-- Adds 'I' to `type` in `zenylog`
-
 ALTER TABLE `char` ADD COLUMN `elemental_id` int(11) unsigned NOT NULL default '0';
 
 --
