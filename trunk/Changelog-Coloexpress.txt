@@ -1,6 +1,17 @@
 Date	Added
 
 2012/04/25
+	* Merged changes up to rAthena 15905.
+	- Made branding more consistent.
+	- Updated the at-command help file with some minor adjustments.
+	- Added elemental source files to the appropriate VS2010 filters.
+	- Fixed status point cost not being set to 0 once maximum has been reached.
+	- Fixed  SC_CAMOUFLAGE can be removed by using RA_CAMOUFLAGE again.
+	- Also portals won't warp players under this status.
+	- Fixed emperium coordinates in Payon Holy Shadow (payg_cas03).
+	- Also enforce sd->emotionlasttime for pet emotions.
+	- Fixed missing renewal status for RG_RAID.
+	- Fixed elemental bl was not removed when pc is removed/freed.
 	* Merged changes up to rAthena 15896.
 	- Fixed a SQL error from r4.
 	- Updated the item_db.txt document to show info for latest job masks, upper masks, and ammo types.
