@@ -592,6 +592,7 @@ typedef enum sc_type {
 	SC_SOULCOLD, //510
 	SC_HAWKEYES,
 	SC_ODINS_POWER,
+	SC_RAID,
 
 	SC_JYUMONJIKIRI = 780,
 
