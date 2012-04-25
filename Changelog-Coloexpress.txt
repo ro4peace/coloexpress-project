@@ -1,5 +1,11 @@
 Date	Added
 
+2012/04/25
+	* Merged changes up to rAthena 15885.
+	- Fixed typo in Makefile.in (unterminated string).
+	- Initial support for Genetic, Sorcerer and Elemental Summons.
+	- Notice this revision onwards requires you to update your char sql table and add the elemental sql table (check sql-files/upgrade_svn15885_log.sql).
+	- Added CANNONBALL and THROWWEAPON item types as ammo types.
 2012/04/23
 	* Merged changes up to rAthena 15876.
 	- Did some cleaning up and enabled all job lines in job_db 1 and 2.
@@ -26,7 +32,7 @@ Date	Added
 2012/04/17
 	* Separate job_db1.txt to folder pre-re and re.
 	* Fixed renewal update status equipment atk.
-	* Fixed renewal calculate base atk. [tu@]
+	* Fixed renewal calculate base atk.
 	* Fixed renewal update status window.
 	* Removed negative check for Frenzy'ed characters.
 	* Add some values of a monster in getmonsterinfo().
