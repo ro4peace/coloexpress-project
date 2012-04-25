@@ -10480,7 +10480,7 @@ static void clif_parse_UseSkillToId_homun(struct homun_data *hd, struct map_sess
 		target_id = hd->bl.id;
 	if( hd->ud.skilltimer != INVALID_TIMER )
 	{
-		if( skillnum != SA_CASTCANCEL ) return;
+		if( skillnum != SA_CASTCANCEL && skillnum != SO_SPELLFIST )
 	}
 	else if( DIFF_TICK(tick, hd->ud.canact_tick) < 0 )
 		return;
@@ -10504,7 +10504,7 @@ static void clif_parse_UseSkillToId_mercenary(struct mercenary_data *md, struct 
 		target_id = md->bl.id;
 	if( md->ud.skilltimer != INVALID_TIMER )
 	{
-		if( skillnum != SA_CASTCANCEL ) return;
+		if( skillnum != SA_CASTCANCEL && skillnum != SO_SPELLFIST ) return;
 	}
 	else if( DIFF_TICK(tick, md->ud.canact_tick) < 0 )
 		return;
@@ -10576,7 +10576,7 @@ void clif_parse_UseSkillToId(int fd, struct map_session_data *sd)
 	// Whether skill fails or not is irrelevant, the char ain't idle. [Skotlex]
 	sd->idletime = last_tick;
 
-	if( pc_cant_act(sd) )
+	if( pc_cant_act(sd) && !(skillnum == SR_GENTLETOUCH_CURE && (sd->sc.opt1 == OPT1_STONE || sd->sc.opt1 == OPT1_FREEZE || sd->sc.opt1 == OPT1_STUN)) )
 		return;
 	if( pc_issit(sd) )
 		return;
@@ -10592,7 +10592,7 @@ void clif_parse_UseSkillToId(int fd, struct map_session_data *sd)
 	
 	if( sd->ud.skilltimer != INVALID_TIMER )
 	{
-		if( skillnum != SA_CASTCANCEL )
+		if( skillnum != SA_CASTCANCEL && skillnum != SO_SPELLFIST )
 			return;
 	}
 	else if( DIFF_TICK(tick, sd->ud.canact_tick) < 0 )
