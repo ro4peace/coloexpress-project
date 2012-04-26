@@ -1,6 +1,8 @@
 Date	Added
 
 2012/04/26
+	* Replaced rand() calls with rnd().
+	* Code consistency updates. No functional changes.
 	* Fixed Frost Nova freeze chance has been updated to meet it's renewal values.
 	* Fixed Wall of Thorn skill, all of its conditions should now be met.
 	* Fixed Thorn Trap 'immobilization' effect should now be working properly.
