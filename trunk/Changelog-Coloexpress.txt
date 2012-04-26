@@ -1,6 +1,7 @@
 Date	Added
 
 2012/04/26
+	* Really minor performance improvement on skill_check_condition_castbegin vs a player mounted on a wug, so that it doesn't unnecessarily allocate skill_get_requirement stuff when you won't be able to use the skill at all due to wug riding restrictions.
 	* Fixed crash when sc_increaseagi would be cast on non-players.
 	* Added ENABLE_EXTRA_BUILDBOT_CODE to CMakeLists.txt.
 	* Fixed the Increase agi effect put the char to stand if sit.
