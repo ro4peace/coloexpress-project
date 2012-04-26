@@ -1,6 +1,11 @@
 Date	Added
 
 2012/04/26
+	* Fixed crash when sc_increaseagi would be cast on non-players.
+	* Added ENABLE_EXTRA_BUILDBOT_CODE to CMakeLists.txt.
+	* Fixed the Increase agi effect put the char to stand if sit.
+	* Fixed Emergency Call so that it does not recall dead guild members.
+	* Fixed magic damage reduction formula were wrong.
 	* Allow any type of argument in 'escape_sql' script command.
 	* Fixed charserver's subnet check using char_ip instead of map_ip as the mapserver ip.
 	* Applied Shinryo's patch for login packet 0x825 (CA_SSO_LOGIN_REQ) that interprets the token-portion of the packet as password (ref: hAB1JReB).
@@ -15,7 +20,7 @@ Date	Added
 2012/04/25
 	* Merged changes up to rAthena 15920.
 	- Also Added missing Elemental SC damage boosts.
-	- Fixed bugreport:5605 Spell Fist should now work properly.
+	- Fixed Spell Fist should now work properly.
 	- Fixed Vacuum Extreme not assigning units and additionally not preventing movement.
 	- Added missing units from pre-renewal skill_unit_db.txt.
 	- Updated Mob AI's target check with new status effects: SC_BITE, SC_VACUUM_EXTREME, SC_CRYSTALIZE, SC_THORNSTRAP and SC__MANHOLE.
