@@ -1,6 +1,8 @@
 Date	Added
 
 2012/04/26
+	* Removed pc_cant_newmount since it has been proved newer clients still support them.
+	* Fixed warning on mob.c.
 	* Some more 1st Class Platinum Skill NPC optimizations.
 	* Updated locations for colored Butterfly Wings (14582-14585) to official.
 	* Fixed memory leak on MvP tomb system, killer name now uses static buffer.
