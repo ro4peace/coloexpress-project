@@ -367,6 +367,15 @@ else()
 	message( FATAL_ERROR "invalid option ENABLE_PROFILER=${ENABLE_PROFILER} (valid options: ${PROFILER_OPTIONS})" )
 endif()
 
+#
+# Enable extra buildbot code (default=OFF)
+#
+option( ENABLE_EXTRA_BUILDBOT_CODE "enable extra buildbot code (default=OFF)" OFF )
+if( ENABLE_EXTRA_BUILDBOT_CODE )
+	set_property( CACHE GLOBAL_DEFINITIONS  PROPERTY VALUE "${GLOBAL_DEFINITIONS} -DBUILDBOT" )
+	message( STATUS "Enabled extra BUILDBOT code" )
+endif()
+
 
 #####################################################################
 # package stuff
