@@ -1,6 +1,11 @@
 Date	Added
 
 2012/04/26
+	* Fixed Frost Nova freeze chance has been updated to meet it's renewal values.
+	* Fixed Wall of Thorn skill, all of its conditions should now be met.
+	* Fixed Thorn Trap 'immobilization' effect should now be working properly.
+	* Minor performance improvement on script function is_function -- replaced strdb_get with strdb_exists since we don't use the data at all.
+	* Modified get_revision to return the revision number rather than it's string, when revision is not known by the server it now returns -1.
 	* Removed pc_cant_newmount since it has been proved newer clients still support them.
 	* Fixed warning on mob.c.
 	* Some more 1st Class Platinum Skill NPC optimizations.
