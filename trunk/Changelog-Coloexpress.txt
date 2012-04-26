@@ -1,6 +1,7 @@
 Date	Added
 
 2012/04/26
+	* Some more 1st Class Platinum Skill NPC optimizations.
 	* Updated locations for colored Butterfly Wings (14582-14585) to official.
 	* Fixed memory leak on MvP tomb system, killer name now uses static buffer.
 	* Removed some unneeded perm. char. variables.
