@@ -1,5 +1,9 @@
 Date	Added
 
+2012/04/26
+	*Removed IT_THROWWEAPON as its not needed.
+	*Updated throwable items and cannonballs to official.
+	*Genetic's Cart Cannon and Sling Item skills should now work due to the item fixes.
 2012/04/25
 	* Merged changes up to rAthena 15920.
 	- Also Added missing Elemental SC damage boosts.
