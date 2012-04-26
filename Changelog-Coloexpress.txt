@@ -1,6 +1,11 @@
 Date	Added
 
 2012/04/26
+	* Allow any type of argument in 'escape_sql' script command.
+	* Fixed charserver's subnet check using char_ip instead of map_ip as the mapserver ip.
+	* Applied Shinryo's patch for login packet 0x825 (CA_SSO_LOGIN_REQ) that interprets the token-portion of the packet as password (ref: hAB1JReB).
+	* Updated/added stolen item/zeny logging.
+	* Fixed renamed file not being svn-copied (and lacking svn history).
 	* Partially rewrote all castle files and updated all Castle flags, NPC's and warp coordinations to latest available official file.
 	* Renamed agit_template to agit_main and also updated it to latest available official file.
 	* Removed the Treasure Room Protection from agit_template and separated it into another file which will now be known as trs_rp.txt.
