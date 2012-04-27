@@ -1,6 +1,8 @@
 Date	Added
 
 2012/04/27
+	* Updated script documentation to reflect changes applied.
+	* Added initial support for direct variable assignment (allows assigning values to variables without the use of 'set').
 	* Added SCRIPT_CALLFUNC_CHECK macro to disable direct callback if affecting performance.
 	* Updated parse_simpleexpr to parse direction function invocation.
 	* Added support for scripts to call user-defined functions without the use of callfunc.
