@@ -951,8 +951,25 @@ const char* parse_callfunc(const char* p, int require_paren)
 			disp_error_message("parse_callfunc: callsub has no arguments, please review it's definition",p);
 		if( *arg != '*' )
 			++arg; // count func as argument
-	} else
-		disp_error_message("parse_line: expect command, missing function name or calling undeclared function",p);
+	} else {
+#ifdef SCRIPT_CALLFUNC_CHECK
+		const char* name = get_str(func);
+		if( strdb_get(userfunc_db, name) == NULL ) {
+#endif
+			disp_error_message("parse_line: expect command, missing function name or calling undeclared function",p);
+#ifdef SCRIPT_CALLFUNC_CHECK
+		} else {
+			int callfunc = search_str("callfunc");
+			add_scriptl(callfunc);
+			add_scriptc(C_ARG);
+			add_scriptc(C_STR);
+			while( *name ) add_scriptb(*name ++);
+			add_scriptb(0);
+			arg = buildin_func[str_data[callfunc].val].arg;
+			if( *arg != '*' ) ++ arg;
+		}
+#endif
+	}
 
 	p = skip_word(p);
 	p = skip_space(p);
@@ -1091,6 +1108,14 @@ const char* parse_simpleexpr(const char *p)
 		l=add_word(p);
 		if( str_data[l].type == C_FUNC || str_data[l].type == C_USERFUNC || str_data[l].type == C_USERFUNC_POS)
 			return parse_callfunc(p,1);
+#ifdef SCRIPT_CALLFUNC_CHECK
+		else {
+			const char* name = get_str(l);
+			if( strdb_get(userfunc_db,name) != NULL ) {
+				return parse_callfunc(p,1);
+			}
+		}
+#endif
 
 		p=skip_word(p);
 		if( *p == '[' ){
