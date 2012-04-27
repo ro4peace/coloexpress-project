@@ -1,5 +1,9 @@
 Date	Added
 
+2012/04/27
+	* Added SCRIPT_CALLFUNC_CHECK macro to disable direct callback if affecting performance.
+	* Updated parse_simpleexpr to parse direction function invocation.
+	* Added support for scripts to call user-defined functions without the use of callfunc.
 2012/04/26
 	* Replaced rand() calls with rnd().
 	* Code consistency updates. No functional changes.
