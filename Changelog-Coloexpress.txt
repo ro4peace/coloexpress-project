@@ -1,5 +1,11 @@
 Date	Added
 
+2012/04/29
+	* Updated the script engine to store references to important re-used methods (set, callfunc, callsub, getelementofarray).
+	* Updated the user-defined function invocation to reduce strdb_get() calls to find a matching function.
+	* Updated the direct variable assignment system to remove an unnecessary for loop while processing variable names.
+	* Updated the direct variable assignment system to support assigning an array to a variable directly (without the use of copyarray).
+	* Fixed typo for the -- operator.
 2012/04/27
 	* Updated script documentation to reflect changes applied.
 	* Added initial support for direct variable assignment (allows assigning values to variables without the use of 'set').
