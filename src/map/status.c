@@ -29,6 +29,7 @@
 #include "unit.h"
 #include "homunculus.h"
 #include "mercenary.h"
+#include "elemental.h"
 #include "vending.h"
 
 #include <time.h>

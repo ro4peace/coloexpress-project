@@ -10480,7 +10480,7 @@ static void clif_parse_UseSkillToId_homun(struct homun_data *hd, struct map_sess
 		target_id = hd->bl.id;
 	if( hd->ud.skilltimer != INVALID_TIMER )
 	{
-		if( skillnum != SA_CASTCANCEL && skillnum != SO_SPELLFIST )
+		if( skillnum != SA_CASTCANCEL && skillnum != SO_SPELLFIST ) return;
 	}
 	else if( DIFF_TICK(tick, hd->ud.canact_tick) < 0 )
 		return;

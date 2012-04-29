@@ -8645,8 +8645,8 @@ int skill_castend_id(int tid, unsigned int tick, int id, intptr_t data)
 		return 0;
 	}
 
-	if(ud->skillid != SA_CASTCANCEL  &&  !(ud->skillid == SO_SPELLFIST && (sd && (sd->skillid_old == MG_FIREBOLT || sd->skillid_old == MG_COLDBOLT || sd->skillid_old == MG_LIGHTNINGBOLT))) ) {// otherwise handled in unit_skillcastcancel()
-	{// otherwise handled in unit_skillcastcancel()
+	if(ud->skillid != SA_CASTCANCEL  &&
+	   !(ud->skillid == SO_SPELLFIST && (sd && (sd->skillid_old == MG_FIREBOLT || sd->skillid_old == MG_COLDBOLT || sd->skillid_old == MG_LIGHTNINGBOLT))) ) {// otherwise handled in unit_skillcastcancel()
 		if( ud->skilltimer != tid ) {
 			ShowError("skill_castend_id: Timer mismatch %d!=%d!\n", ud->skilltimer, tid);
 			ud->skilltimer = INVALID_TIMER;
@@ -8695,7 +8695,7 @@ int skill_castend_id(int tid, unsigned int tick, int id, intptr_t data)
 				ud->skillx = target->x;
 				ud->skilly = target->y;
 				ud->skilltimer = tid;
-				return skill_castend_pos(tid,tick,id,data);
+				return skill_castend_pos(tid,tick,id,data);				
 		}
 
 		if(ud->skillid == RG_BACKSTAP) {
@@ -12122,7 +12122,6 @@ int skill_check_condition_castbegin(struct map_session_data* sd, short skill, sh
 				clif_skill_fail(sd,skill,USESKILL_FAIL_LEVEL,0);
 				return 0;
 			}
-		}
 			break;
 		case RA_WUGRIDER:
 			if( !pc_isridingwug(sd) && !pc_iswug(sd) ) {
