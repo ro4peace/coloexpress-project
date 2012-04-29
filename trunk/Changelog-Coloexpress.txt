@@ -1,6 +1,7 @@
 Date	Added
 
 2012/04/29
+	* Fixed a map-server crash when script variable storage reference is NULL.
 	* Fixed a critical grammatical error in doc/atcommands.txt.
 	* Fixed a spelling and grammar typo in quests_13_2.txt.
 	* Fixed an issue with the instance variable storage system never being initialised (since unknown revision).
