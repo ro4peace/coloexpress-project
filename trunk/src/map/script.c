@@ -2533,23 +2533,20 @@ void get_val(struct script_state* st, struct script_data* data)
 			break;
 		case '.':
 			{
-				struct linkdb_node** n =
-					data->ref      ? data->ref:
-					name[1] == '@' ? st->stack->var_function:// instance/scope variable
-					                 &st->script->script_vars;// npc variable
-				data->u.str = (char*)linkdb_search(n, (void*)__64BPRTSIZE(reference_getuid(data)));
+				struct DBMap* n =
+					data->ref      ? *data->ref:
+					name[1] == '@' ?  st->stack->var_function:// instance/scope variable
+					                  st->script->script_vars;// npc variable
+				data->u.str = (char*)idb_get(n,reference_getuid(data));
 			}
 			break;
 		case '\'':
-			{
-				struct linkdb_node** n = NULL;
 				if (st->instance_id) {
-					n = &instance[st->instance_id].svar;
+					data->u.str = (char*)idb_get(instance[st->instance_id].vars,reference_getuid(data));
 				} else {
-					ShowWarning("script:get_val: cannot access instance variable '%s', defaulting to 0\n", name);
+					ShowWarning("script:get_val: cannot access instance variable '%s', defaulting to \"\"\n", name);
+					data->u.str = NULL;
 				}
-				data->u.str = (char*)linkdb_search(n, (void*)__64BPRTSIZE(reference_getuid(data)));
-			}
 			break;
 		default:
 			data->u.str = pc_readglobalreg_str(sd, name);
@@ -2598,20 +2595,20 @@ void get_val(struct script_state* st, struct script_data* data)
 			break;
 		case '.':
 			{
-				struct linkdb_node** n =
-					data->ref      ? data->ref:
-					name[1] == '@' ? st->stack->var_function:// instance/scope variable
-					                 &st->script->script_vars;// npc variable
-				data->u.num = (int)__64BPRTSIZE(linkdb_search(n, (void*)__64BPRTSIZE(reference_getuid(data))));
+				struct DBMap* n =
+					data->ref      ? *data->ref:
+					name[1] == '@' ?  st->stack->var_function:// instance/scope variable
+					                  st->script->script_vars;// npc variable
+				data->u.num = (int)idb_iget(n,reference_getuid(data));
 			}
 			break;
 		case '\'':
-			{
-				struct linkdb_node** n = NULL;
 				if( st->instance_id )
-					n = &instance[st->instance_id].ivar;
-				data->u.num = (int)__64BPRTSIZE(linkdb_search(n, (void*)__64BPRTSIZE(reference_getuid(data))));
-			}
+					data->u.num = (int)idb_iget(instance[st->instance_id].vars,reference_getuid(data));
+				else {
+					ShowWarning("script:get_val: cannot access instance variable '%s', defaulting to 0\n", name);
+					data->u.num = 0;
+				}
 			break;
 		default:
 			data->u.num = pc_readglobalreg(sd, name);
@@ -2623,11 +2620,11 @@ void get_val(struct script_state* st, struct script_data* data)
 	return;
 }
 
-struct script_data* push_val2(struct script_stack* stack, enum c_op type, int val, struct linkdb_node** ref);
+struct script_data* push_val2(struct script_stack* stack, enum c_op type, int val, struct DBMap** ref);
 
 /// Retrieves the value of a reference identified by uid (variable, constant, param)
 /// The value is left in the top of the stack and needs to be removed manually.
-void* get_val2(struct script_state* st, int uid, struct linkdb_node** ref)
+void* get_val2(struct script_state* st, int uid, struct DBMap** ref)
 {
 	struct script_data* data;
 	push_val2(st->stack, C_NAME, uid, ref);
@@ -2640,7 +2637,7 @@ void* get_val2(struct script_state* st, int uid, struct linkdb_node** ref)
  * Stores the value of a script variable
  * Return value is 0 on fail, 1 on success.
  *------------------------------------------*/
-static int set_reg(struct script_state* st, TBL_PC* sd, int num, const char* name, const void* value, struct linkdb_node** ref)
+static int set_reg(struct script_state* st, TBL_PC* sd, int num, const char* name, const void* value, struct DBMap** ref)
 {
 	char prefix = name[0];
 
@@ -2656,24 +2653,20 @@ static int set_reg(struct script_state* st, TBL_PC* sd, int num, const char* nam
 			return (name[1] == '#') ?
 				pc_setaccountreg2str(sd, name, str) :
 				pc_setaccountregstr(sd, name, str);
-		case '.': {
-			char* p;
-			struct linkdb_node** n;
-			n = (ref) ? ref : (name[1] == '@') ? st->stack->var_function : &st->script->script_vars;
-			p = (char*)linkdb_erase(n, (void*)__64BPRTSIZE(num));
-			if (p) aFree(p);
-			if (str[0]) linkdb_insert(n, (void*)__64BPRTSIZE(num), aStrdup(str));
+		case '.':
+			{
+				struct DBMap* n;
+				n = (ref) ? *ref : (name[1] == '@') ? st->stack->var_function : st->script->script_vars;
+				if( n ) {
+					idb_remove(n, num);
+					if (str[0]) idb_put(n, num, aStrdup(str));
+				}
 			}
 			return 1;
-		case '\'': {
-			char *p;
-			struct linkdb_node** n = NULL;
-			if( st->instance_id )
-				n = &instance[st->instance_id].svar;
-
-			p = (char*)linkdb_erase(n, (void*)__64BPRTSIZE(num));
-			if (p) aFree(p);
-			if( str[0] ) linkdb_insert(n, (void*)__64BPRTSIZE(num), aStrdup(str));
+		case '\'':
+			if( st->instance_id ) {
+				idb_remove(instance[st->instance_id].vars, num);
+				if( str[0] ) idb_put(instance[st->instance_id].vars, num, aStrdup(str));
 			}
 			return 1;
 		default:
@@ -2707,27 +2700,24 @@ static int set_reg(struct script_state* st, TBL_PC* sd, int num, const char* nam
 			return (name[1] == '#') ?
 				pc_setaccountreg2(sd, name, val) :
 				pc_setaccountreg(sd, name, val);
-		case '.': {
-			struct linkdb_node** n;
-			n = (ref) ? ref : (name[1] == '@') ? st->stack->var_function : &st->script->script_vars;
-			if (val == 0)
-				linkdb_erase(n, (void*)__64BPRTSIZE(num));
-			else 
-				linkdb_replace(n, (void*)__64BPRTSIZE(num), (void*)__64BPRTSIZE(val));
+		case '.':
+			{
+				struct DBMap* n;
+				n = (ref) ? *ref : (name[1] == '@') ? st->stack->var_function : st->script->script_vars;
+				if( n ) {
+					idb_remove(n, num);
+					if( val != 0 )
+						idb_iput(n, num, val);
+				}
 			}
 			return 1;
 		case '\'':
-			{
-				struct linkdb_node** n = NULL;
-				if( st->instance_id )
-					n = &instance[st->instance_id].ivar;
-
-				if( val == 0 )
-					linkdb_erase(n, (void*)__64BPRTSIZE(num));
-				else
-					linkdb_replace(n, (void*)__64BPRTSIZE(num), (void*)__64BPRTSIZE(val));
-				return 1;
+			if( st->instance_id ) {
+				idb_remove(instance[st->instance_id].vars, num);
+				if( val != 0 )
+					idb_iput(instance[st->instance_id].vars, num, val);
 			}
+			return 1;
 		default:
 			return pc_setglobalreg(sd, name, val);
 		}
@@ -2739,7 +2729,7 @@ int set_var(TBL_PC* sd, char* name, void* val)
     return set_reg(NULL, sd, reference_uid(add_str(name),0), name, val, NULL);
 }
 
-void setd_sub(struct script_state *st, TBL_PC *sd, const char *varname, int elem, void *value, struct linkdb_node **ref)
+void setd_sub(struct script_state *st, TBL_PC *sd, const char *varname, int elem, void *value, struct DBMap **ref)
 {
 	set_reg(st, sd, reference_uid(add_str(varname),elem), varname, value, ref);
 }
@@ -2852,7 +2842,7 @@ void stack_expand(struct script_stack* stack)
 #define push_val(stack,type,val) push_val2(stack, type, val, NULL)
 
 /// Pushes a value into the stack (with reference)
-struct script_data* push_val2(struct script_stack* stack, enum c_op type, int val, struct linkdb_node** ref)
+struct script_data* push_val2(struct script_stack* stack, enum c_op type, int val, struct DBMap** ref)
 {
 	if( stack->sp >= stack->sp_max )
 		stack_expand(stack);
@@ -2937,10 +2927,7 @@ void pop_stack(struct script_state* st, int start, int end)
 		{
 			struct script_retinfo* ri = data->u.ri;
 			if( ri->var_function )
-			{
 				script_free_vars(ri->var_function);
-				aFree(ri->var_function);
-			}
 			aFree(ri);
 		}
 		data->type = C_NOP;
@@ -2969,22 +2956,17 @@ void pop_stack(struct script_state* st, int start, int end)
 /*==========================================
  * スクリプト依存変数、関数依存変数の解放
  *------------------------------------------*/
-void script_free_vars(struct linkdb_node **node)
+void script_free_vars(struct DBMap* storage)
 {
-	struct linkdb_node* n = *node;
-	while( n != NULL)
-	{
-		const char* name = get_str((int)__64BPRTSIZE((n->key)&0x00ffffff));
-		if( is_string_variable(name) )
-			aFree(n->data); // 文字型変数なので、データ削除
-		n = n->next;
+	if( storage )
+	{// destroy the storage construct containing the variables
+		db_destroy(storage);
 	}
-	linkdb_final( node );
 }
 
 void script_free_code(struct script_code* code)
 {
-	script_free_vars( &code->script_vars );
+	script_free_vars( code->script_vars );
 	aFree( code->script_buf );
 	aFree( code );
 }
@@ -3005,7 +2987,7 @@ struct script_state* script_alloc_state(struct script_code* script, int pos, int
 	st->stack->sp_max = 64;
 	CREATE(st->stack->stack_data, struct script_data, st->stack->sp_max);
 	st->stack->defsp = st->stack->sp;
-	CREATE(st->stack->var_function, struct linkdb_node*, 1);
+	st->stack->var_function = idb_alloc(DB_OPT_RELEASE_DATA);
 	st->state = RUN;
 	st->script = script;
 	//st->scriptroot = script;
@@ -3028,7 +3010,6 @@ void script_free_state(struct script_state* st)
 	if( st->sleep.timer != INVALID_TIMER )
 		delete_timer(st->sleep.timer, run_script_timer);
 	script_free_vars(st->stack->var_function);
-	aFree(st->stack->var_function);
 	pop_stack(st, 0, st->stack->sp);
 	aFree(st->stack->stack_data);
 	aFree(st->stack);
@@ -3465,7 +3446,6 @@ int run_func(struct script_state *st)
 			return 1;
 		}
 		script_free_vars( st->stack->var_function );
-		aFree(st->stack->var_function);
 
 		ri = st->stack->stack_data[st->stack->defsp-1].u.ri;
 		nargs = ri->nargs;
@@ -4481,7 +4461,7 @@ BUILDIN_FUNC(callfunc)
 		{
 			const char* name = reference_getname(data);
 			if( name[0] == '.' && name[1] == '@' )
-				data->ref = st->stack->var_function;
+				data->ref = &st->stack->var_function;
 			else if( name[0] == '.' )
 				data->ref = &st->script->script_vars;
 		}
@@ -4499,7 +4479,7 @@ BUILDIN_FUNC(callfunc)
 	st->script = scr;
 	st->stack->defsp = st->stack->sp;
 	st->state = GOTO;
-	st->stack->var_function = (struct linkdb_node**)aCalloc(1, sizeof(struct linkdb_node*));
+	st->stack->var_function = idb_alloc(DB_OPT_RELEASE_DATA);
 
 	return 0;
 }
@@ -4527,7 +4507,7 @@ BUILDIN_FUNC(callsub)
 		{
 			const char* name = reference_getname(data);
 			if( name[0] == '.' && name[1] == '@' )
-				data->ref = st->stack->var_function;
+				data->ref = &st->stack->var_function;
 		}
 	}
 
@@ -4542,7 +4522,7 @@ BUILDIN_FUNC(callsub)
 	st->pos = pos;
 	st->stack->defsp = st->stack->sp;
 	st->state = GOTO;
-	st->stack->var_function = (struct linkdb_node**)aCalloc(1, sizeof(struct linkdb_node*));
+	st->stack->var_function = idb_alloc(DB_OPT_RELEASE_DATA);
 
 	return 0;
 }
@@ -4597,7 +4577,7 @@ BUILDIN_FUNC(return)
 			const char* name = reference_getname(data);
 			if( name[0] == '.' && name[1] == '@' )
 			{// scope variable
-				if( !data->ref || data->ref == st->stack->var_function )
+				if( !data->ref || data->ref == (DBMap**)&st->stack->var_function )
 					get_val(st, data);// current scope, convert to value
 			}
 			else if( name[0] == '.' && !data->ref )
@@ -5178,7 +5158,7 @@ BUILDIN_FUNC(set)
 ///
 
 /// Returns the size of the specified array
-static int32 getarraysize(struct script_state* st, int32 id, int32 idx, int isstring, struct linkdb_node** ref)
+static int32 getarraysize(struct script_state* st, int32 id, int32 idx, int isstring, struct DBMap** ref)
 {
 	int32 ret = idx;
 

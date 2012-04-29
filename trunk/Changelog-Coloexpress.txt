@@ -1,6 +1,14 @@
 Date	Added
 
 2012/04/29
+	* Fixed a critical grammatical error in doc/atcommands.txt.
+	* Fixed a spelling and grammar typo in quests_13_2.txt.
+	* Fixed an issue with the instance variable storage system never being initialised (since unknown revision).
+	* Combined both string and integer instance variables into a single DBMap* structure.
+	* Fixed a missing new-line at the end of src/common/conf.h causing warnings.
+	* Updated the script engine to make use of the DBMap* structure for storing variables (for Ind <3).
+	* Fixed missing new-lines at the end of various files causing warnings.
+	* Fixed some in npc 2008_newhat_mir.txt.
 	* Updated the script engine to store references to important re-used methods (set, callfunc, callsub, getelementofarray).
 	* Updated the user-defined function invocation to reduce strdb_get() calls to find a matching function.
 	* Updated the direct variable assignment system to remove an unnecessary for loop while processing variable names.
