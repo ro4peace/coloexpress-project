@@ -1,10 +1,13 @@
 Date	Added
 
-2012/04/29
+2012/04/30
+	* Removed leftover TXT configs.
+	* Edited more ***_config_read() functions to show a warning if "Unknown setting" is found.
 	* A minor memory improvement, and some curly brace love.
 	* Yet another performance improvement: Shut Down processing is now about to 7 times faster.
 	* Reasonably-sized performance improvement: @reloadscript is about to 3 times faster.
 	* Fixed a missing variable storage allocation resulting in NPC variables not being saved.
+2012/04/29
 	* Fixed a map-server crash when script variable storage reference is NULL.
 	* Fixed a critical grammatical error in doc/atcommands.txt.
 	* Fixed a spelling and grammar typo in quests_13_2.txt.
