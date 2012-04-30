@@ -1,6 +1,11 @@
 Date	Added
 
 2012/04/30
+	* Fixed compilation errors due to unnamed argument in npc_unload.
+	* Amended the permanent NPC variable instance system to utilise the same allocated DBMap**.
+	* Fixed NPC instance variables not being passed through to callfunc; or callsub; stacks properly.
+	* Removed copyarray; functionality when running set; or assigning variables.
+	* Updated Novice WoE script.
 	* Updated the unit engine to cache attacker count rather than utilise CPU intensive block iterations.
 	* Delayed consumption items are no longer usable while sitting (temporary measure until we figure what actually broke it).
 	* Removed leftover TXT configs.
