@@ -2456,7 +2456,7 @@ struct script_code* parse_script(const char *src,const char *file,int line,int o
 	CREATE(code,struct script_code,1);
 	code->script_buf  = script_buf;
 	code->script_size = script_size;
-	code->script_vars = NULL;
+	code->script_vars = idb_alloc(DB_OPT_RELEASE_DATA);
 	return code;
 }
 
@@ -4017,8 +4017,7 @@ int do_init_script()
 	return 0;
 }
 
-int script_reload()
-{
+int script_reload() {
 	userfunc_db->clear(userfunc_db, db_script_free_code_sub);
 	db_clear(scriptlabel_db);
 
@@ -4031,7 +4030,6 @@ int script_reload()
 		}
 		linkdb_final(&sleep_db);
 	}
-
 	mapreg_reload();
 	return 0;
 }
