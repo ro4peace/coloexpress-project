@@ -1,6 +1,8 @@
 Date	Added
 
 2012/04/30
+	* Updated the unit engine to cache attacker count rather than utilise CPU intensive block iterations.
+	* Delayed consumption items are no longer usable while sitting (temporary measure until we figure what actually broke it).
 	* Removed leftover TXT configs.
 	* Edited more ***_config_read() functions to show a warning if "Unknown setting" is found.
 	* A minor memory improvement, and some curly brace love.
