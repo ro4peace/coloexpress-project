@@ -1,5 +1,8 @@
 Date	Added
 
+2012/05/01
+	* Added break and continue in switch-case block.
+	* Fixed base experience rewards.
 2012/04/30
 	* Fixed compilation errors due to unnamed argument in npc_unload.
 	* Amended the permanent NPC variable instance system to utilise the same allocated DBMap**.
