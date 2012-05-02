@@ -794,7 +794,7 @@ int inter_init_sql(const char *file)
 	inter_pet_sql_init();
 	inter_homunculus_sql_init();
 	inter_mercenary_sql_init();
-	inter_elemental_sql_init();
+	inter_elemental_sql_final();
 	inter_accreg_sql_init();
 	inter_mail_sql_init();
 	inter_auction_sql_init();
