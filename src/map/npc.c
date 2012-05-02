@@ -1733,7 +1733,7 @@ void npc_unload_duplicates(struct npc_data* nd)
 	map_foreachnpc(npc_unload_dup_sub,nd->bl.id);
 }
 
-int npc_unload(struct npc_data* nd)
+int npc_unload(struct npc_data* nd, bool single)
 {
 	nullpo_ret(nd);
 
