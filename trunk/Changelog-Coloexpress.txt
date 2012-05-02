@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/02
+	* Added @accinfo atcommand. "Huge thanks to"/"Credits to" Dekamaster/Nightroad <3.
 	* Updated "gained exp" dialog.
 	* Revert the amount of Base Exp reward.
 2012/05/01
