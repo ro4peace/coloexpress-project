@@ -1,5 +1,8 @@
 Date	Added
 
+2012/05/02
+	* Updated "gained exp" dialog.
+	* Revert the amount of Base Exp reward.
 2012/05/01
 	* Added break and continue in switch-case block.
 	* Fixed base experience rewards.
