@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/02
+	* Minor performance improvement on the already-stupid job name handling of char server.
 	* Fixed gcc warning.
 	* Added @accinfo atcommand. "Huge thanks to"/"Credits to" Dekamaster/Nightroad <3.
 	* Updated "gained exp" dialog.
