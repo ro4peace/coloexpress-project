@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/02
+	* Fixed DEF and MDEF now display in its proper renewal fields (under renewal mode).
 	* Fixed bug with character moving to attack target (normal attack) and stopping at attackable range without attacking (bow-bug only).
 	* Fixed elemental_init was being called instead of final at inter.c.
 	* @mi/@mobinfo: Added support for mob FLEE & HIT, dropped SP support (all official mobs have 1 sp).
