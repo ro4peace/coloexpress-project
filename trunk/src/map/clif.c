@@ -2881,7 +2881,7 @@ void clif_updatestatus(struct map_session_data *sd,int type)
 		WFIFOW(fd,2)=sd->cart_num;
 		WFIFOW(fd,4)=MAX_CART;
 		WFIFOL(fd,6)=sd->cart_weight;
-		WFIFOL(fd,10)=battle_config.max_cart_weight;
+		WFIFOL(fd,10)=sd->cart_weight_max;
 		len=14;
 		break;
 
@@ -9645,7 +9645,10 @@ void clif_parse_ActionRequest_sub(struct map_session_data *sd, int action_type, 
 	if (sd->sc.count &&
 		(sd->sc.data[SC_TRICKDEAD] ||
 		sd->sc.data[SC_AUTOCOUNTER] ||
-		sd->sc.data[SC_BLADESTOP]))
+		sd->sc.data[SC_BLADESTOP] ||
+		sd->sc.data[SC__MANHOLE] ||
+		sd->sc.data[SC_CURSEDCIRCLE_ATKER] ||
+		sd->sc.data[SC_CURSEDCIRCLE_TARGET] ))
 		return;
 
 	pc_stop_walking(sd, 1);

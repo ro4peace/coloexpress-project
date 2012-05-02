@@ -8055,6 +8055,8 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, in
 		if( flag&1 ) {
 			if( is_boss(bl) ) break;
 			if( sc_start2(bl, type, 100, skilllv, src->id, skill_get_time(skillid, skilllv))) {
+				if( bl->type == BL_MOB )
+					mob_unlocktarget((TBL_MOB*)bl,gettick());
 				unit_stop_attack(bl);
 				clif_bladestop(src, bl->id, 1);
 				map_freeblock_unlock();
@@ -11734,7 +11736,23 @@ int skill_check_condition_castbegin(struct map_session_data* sd, short skill, sh
 				return 0;
 		}
 	}
-
+	if( sd->sc.option&OPTION_MADOGEAR ) {
+		switch( skill ) { //Blacksmiths and Mastersmiths skills are unusable when Mado is equipped. [Jobbie]
+			case BS_REPAIRWEAPON:  case WS_MELTDOWN:
+			case BS_HAMMERFALL:    case WS_CARTBOOST:
+			case BS_ADRENALINE:    case WS_WEAPONREFINE:
+			case BS_WEAPONPERFECT: case WS_CARTTERMINATION:
+			case BS_OVERTHRUST:    case WS_OVERTHRUSTMAX:
+			case BS_MAXIMIZE:
+			case BS_ADRENALINE2:
+			case BS_UNFAIRLYTRICK:
+			case BS_GREED:
+				clif_skill_fail(sd,skill,USESKILL_FAIL_LEVEL,0);
+				return 0;
+			default: //Only Mechanic exlcusive skill can be used.
+				break;
+		}
+	}
 	if( lv < 1 || lv > MAX_SKILL_LEVEL )
 		return 0;
 
