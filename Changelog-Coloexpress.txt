@@ -1,6 +1,10 @@
 Date	Added
 
 2012/05/02
+	* Fixed Mechanics in mado gear are no longer able to use blacksmith or whitesmith skills.
+	* Fixed GN Cart Remodeling weight boost should now be working properly.
+	* Fixed Cursed Circle caster can no longer move while in the effect (but if he casts any skill it cancels his state and his targets' one). Cursed Circle caster is no longer to attack nearby units either, Also fixed a bug in manhole that allowed trapped character to attack nearby units.
+	* Fixed shura cursed circle now stops mobs from being able to target you while under effect.
 	* Fixed the last buildbot warnings throughout multiple platforms, from console plugin (which should be purged rather than fixed imo :|).
 	* Fixed 2 buildbot warnings throughout multiple operating systems.
 	* Clearing a few dozen buildbot warnings.

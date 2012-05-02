@@ -2162,7 +2162,7 @@ int status_calc_pc_(struct map_session_data* sd, bool first)
 	struct status_data *status; // pointer to the player's base status
 	const struct status_change *sc = &sd->sc;
 	struct s_skill b_skill[MAX_SKILL]; // previous skill tree
-	int b_weight, b_max_weight; // previous weight
+	int b_weight, b_max_weight, b_cart_weight_max; // previous weight
 	int i,index;
 	int skill,refinedef=0;
 
@@ -2173,6 +2173,7 @@ int status_calc_pc_(struct map_session_data* sd, bool first)
 	memcpy(b_skill, &sd->status.skill, sizeof(b_skill));
 	b_weight = sd->weight;
 	b_max_weight = sd->max_weight;
+	b_cart_weight_max = sd->cart_weight_max;
 
 	pc_calc_skilltree(sd);	// スキルツリ?の計算
 
@@ -2868,6 +2869,8 @@ int status_calc_pc_(struct map_session_data* sd, bool first)
 	if((skill=pc_checkskill(sd,ALL_INCCARRY))>0)
 		sd->max_weight += 2000*skill;
 
+	sd->cart_weight_max = battle_config.max_cart_weight + (pc_checkskill(sd, GN_REMODELING_CART)*5000);
+
 	if (pc_checkskill(sd,SM_MOVINGRECOVERY)>0)
 		sd->regen.state.walk = 1;
 	else
@@ -2979,6 +2982,9 @@ int status_calc_pc_(struct map_session_data* sd, bool first)
 	if(b_max_weight != sd->max_weight) {
 		clif_updatestatus(sd,SP_MAXWEIGHT);
 		pc_updateweightstatus(sd);
+	}
+	if( b_cart_weight_max != sd->cart_weight_max ) {
+		clif_updatestatus(sd,SP_CARTINFO);
 	}
 
 	calculating = 0;
