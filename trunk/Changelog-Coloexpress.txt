@@ -1,6 +1,9 @@
 Date	Added
 
 2012/05/02
+	* Fixed the last buildbot warnings throughout multiple platforms, from console plugin (which should be purged rather than fixed imo :|).
+	* Fixed 2 buildbot warnings throughout multiple operating systems.
+	* Clearing a few dozen buildbot warnings.
 	* Fixed DEF and MDEF now display in its proper renewal fields (under renewal mode).
 	* Fixed bug with character moving to attack target (normal attack) and stopping at attackable range without attacking (bow-bug only).
 	* Fixed elemental_init was being called instead of final at inter.c.
