@@ -1,5 +1,16 @@
 Date	Added
 
+2012/05/03
+	* Fixed Wall of Thorns should now deal damage properly as well as lock the trapped character in.
+	* Fixed Ninja's Cast-off Ciceda Shell now triggers card effects even tho it misses (e.g. garm card / pest card).
+	* Fixed Genetic Change Material missing items.
+	* Fixed Venom Impress boost against poison should now work. Additionally, Fixed Oratio Throns Trap and Elemental Fire Cloak elemental atrributes.
+	* Fixed Venom Splasher now ignores flee properly.
+	* Fixed Mechanic's Shapeshift, Genetic's Fire Expansion and Sorcerers Summon Elemental skills all now consume its proper requirements depending on level.
+	* Fixed Sorcerer Striking may now only be cast on self or party members, SP upkeep updated.
+	* Fixed Ranger Electric Shocker Trap should now be fully functional.
+	* Fixed Ranger Arrow Storm hit-type.
+	* Fixed players' circular target range is now matching official servers.
 2012/05/02
 	* Fixed Mechanics in mado gear are no longer able to use blacksmith or whitesmith skills.
 	* Fixed GN Cart Remodeling weight boost should now be working properly.
