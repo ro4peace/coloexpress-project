@@ -1,5 +1,7 @@
 Date	Added
 
+2012/05/04
+	* Implemented an atcommand suggestion system.
 2012/05/03
 	* Fixed Wall of Thorns should now deal damage properly as well as lock the trapped character in.
 	* Fixed Ninja's Cast-off Ciceda Shell now triggers card effects even tho it misses (e.g. garm card / pest card).
