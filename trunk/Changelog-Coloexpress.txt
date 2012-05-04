@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/04
+	* Fixed feature.conf improper formatting and removed two unnecessary iterations.
 	* Replaced some literals with enum values.
 	* Regularized file not found error messages.
 	* Implemented an atcommand suggestion system.
