@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/06
+	* Fixed memory thing (if atcommand_suggestions_enabled was disabled it'd allocate the iterators but not free them.)
 	* Fixed local scoped variables reference map not being freed after return.
 	* Partially reverted r45. The 2 loops wasn't unnecessary, they use different match strategy.
 2012/05/04
