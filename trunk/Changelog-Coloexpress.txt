@@ -1,5 +1,7 @@
 Date	Added
 
+2012/05/06
+	* Partially reverted r45. The 2 loops wasn't unnecessary, they use different match strategy.
 2012/05/04
 	* Fixed feature.conf improper formatting and removed two unnecessary iterations.
 	* Replaced some literals with enum values.
