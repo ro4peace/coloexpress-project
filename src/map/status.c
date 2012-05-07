@@ -3762,18 +3762,23 @@ void status_calc_bl_(struct block_list* bl, enum scb_flag flag, bool first)
 			)
 			clif_updatestatus(sd,SP_ATK1);
 
-		if(b_status.def != status->def)
-			clif_updatestatus(sd,SP_DEF1);
-
 		if(b_status.rhw.atk2 != status->rhw.atk2 || b_status.lhw.atk2 != status->lhw.atk2
 #ifdef RENEWAL
 		|| b_status.rhw.atk != status->rhw.atk || b_status.lhw.atk != status->lhw.atk || b_status.equipment_atk != status->equipment_atk
 #endif
 			)
 			clif_updatestatus(sd,SP_ATK2);
-
+#ifdef RENEWAL
+		if(b_status.def != status->def)
+			clif_updatestatus(sd,SP_DEF2);
+		if(b_status.def2 != status->def2)
+			clif_updatestatus(sd,SP_DEF1);
+#else
+		if(b_status.def != status->def)
+			clif_updatestatus(sd,SP_DEF1);
 		if(b_status.def2 != status->def2)
 			clif_updatestatus(sd,SP_DEF2);
+#endif
 		if(b_status.flee2 != status->flee2)
 			clif_updatestatus(sd,SP_FLEE2);
 		if(b_status.cri != status->cri)
@@ -3782,10 +3787,17 @@ void status_calc_bl_(struct block_list* bl, enum scb_flag flag, bool first)
 			clif_updatestatus(sd,SP_MATK1);
 		if(b_status.matk_min != status->matk_min)
 			clif_updatestatus(sd,SP_MATK2);
-		if(b_status.mdef != status->mdef)
-			clif_updatestatus(sd,SP_MDEF1);
-		if(b_status.mdef2 != status->mdef2)
+#ifdef RENEWAL
+		if(b_status.mdef != status->mdef)
 			clif_updatestatus(sd,SP_MDEF2);
+		if(b_status.mdef2 != status->mdef2)
+			clif_updatestatus(sd,SP_MDEF1);
+#else
+		if(b_status.mdef != status->mdef)
+			clif_updatestatus(sd,SP_MDEF1);
+		if(b_status.mdef2 != status->mdef2)
+			clif_updatestatus(sd,SP_MDEF2);
+#endif
 		if(b_status.rhw.range != status->rhw.range)
 			clif_updatestatus(sd,SP_ATTACKRANGE);
 		if(b_status.max_hp != status->max_hp)
