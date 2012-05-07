@@ -1,5 +1,9 @@
 Date	Added
 
+2012/05/07
+	* Fixed quests_13_2.txt format file.
+	* Fixed DEF and MDEF now display (while equiped armor).
+	* Deleted job_db1.txt because not use in r1.
 2012/05/06
 	* Fixed memory thing (if atcommand_suggestions_enabled was disabled it'd allocate the iterators but not free them.)
 	* Fixed local scoped variables reference map not being freed after return.
