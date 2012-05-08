@@ -3806,7 +3806,7 @@ void status_calc_bl_(struct block_list* bl, enum scb_flag flag, bool first)
 #endif
 		}
 
-		if(b_status.mdef2 != status->mdef2)
+		if(b_status.mdef2 != status->mdef2){
 			clif_updatestatus(sd,SP_MDEF2);
 #ifdef RENEWAL
 			clif_updatestatus(sd,SP_MDEF1);
