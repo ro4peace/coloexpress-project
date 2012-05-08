@@ -1,5 +1,8 @@
 Date	Added
 
+2012/05/08
+	* Fixed MDEF & DEF where it does not updating after equipping (follow up r49).
+	* Fixed aspd calculations on some skill bonuses and reductions.
 2012/05/07
 	* Fixed Base atk formula is now in RE.
 	* Fixed Missing null pointer check on NC_MAGNETICFIELD.
