@@ -1,5 +1,9 @@
 Date	Added
 
+2012/05/09
+	* Fixed Nydhorgg's Shadow Garbs (2554) bonus script.
+	* Fixed bonus3 bSPDrainRate documentation.
+	* Fixed Tao Gunka Cards bonus script.
 2012/05/08
 	* Fixed Chaos Panic should now inflict Confusion/Chaos effect work properly.
 	* Fixed the min cap value for negative mdef.
