@@ -1,5 +1,8 @@
 Date	Added
 
+2012/05/10
+	* Fixed the guild skill delay reset feature.
+	* Fixed the target of various skill.
 2012/05/09
 	* Fixed Nydhorgg's Shadow Garbs (2554) bonus script.
 	* Fixed bonus3 bSPDrainRate documentation.
