@@ -1,5 +1,14 @@
 Date	Added
 
+2012/05/11
+	* Created an empty directory during install if the original doesn't exist.
+	* Fixed error getting SVNVERSION from an unversioned directory.
+	* Included 3rdparty just before src.
+	* Added Falcon Flute Trader NPC.
+	* Added Falcon Flute to db/pre-re/item_db.txt, db/re/item_db.txt and item_db.sql.
+	* Added 2 option flags constants used on scripting to const.txt.
+	* Changing these 3 dudes to be off.
+	* Fixed Wug rider may no longer be used on rangers with a falcon.
 2012/05/10
 	* Fixed the guild skill delay reset feature.
 	* Fixed the target of various skill.
