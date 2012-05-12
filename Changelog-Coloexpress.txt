@@ -1,5 +1,9 @@
 Date	Added
 
+2012/05/12
+	* Fixed @changegm no longer functions within gvg castles.
+	* Fixed Effect formula and duration of LG_SHIELDSPELL level 1.
+	* Added Baby Hunter and Baby Ranger check.
 2012/05/11
 	* Created an empty directory during install if the original doesn't exist.
 	* Fixed error getting SVNVERSION from an unversioned directory.
