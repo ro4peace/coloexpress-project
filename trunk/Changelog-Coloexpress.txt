@@ -1,5 +1,11 @@
 Date	Added
 
+2012/05/14
+	* Updated town.txt to allow Mailbox access in all the newer cities.
+	* Removed easter.txt event and the corresponding mobs in mob_db2.txt  and mob_db2.sql since they collide with Satan Morroc minions Mob ID's.
+	* Updated Magical Amplify Power cast time to only be affected by item bonuses.
+	* Added missing Economy check in agit_main and some missing close; also fixed.
+	* Added Credits for Ziu in Falcon Flute NPC.
 2012/05/12
 	* Added missing produce table update.
 	* Fixed @changegm no longer functions within gvg castles.
