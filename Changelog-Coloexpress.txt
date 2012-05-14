@@ -1,6 +1,8 @@
 Date	Added
 
 2012/05/14
+	* CMake: update mysql to 5.5.25 as an external project; add winx64 version.
+	* CMake: don't auto-link dependencies (add support for other dependency types); always use <LIB>_DEPENDENCIES and <LIB>_DEFINITIONS (add support for other mechanics in 3rdparty); restrict the dbghelpplug plugin to 32bit only (needs updating); remove warning about building 64bit (no longer needed?).
 	* Added 2 new Shops to Comodo.
 	* Correctly fixed r61 now.
 	* Restorded scripts_custom.conf since mine accidently got commited with my last commit.

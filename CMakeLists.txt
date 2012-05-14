@@ -464,7 +464,6 @@ set( RUNTIME_FILES
 	"${CMAKE_CURRENT_SOURCE_DIR}/char-server.sh"
 	"${CMAKE_CURRENT_SOURCE_DIR}/charserv-sql.bat"
 	"${CMAKE_CURRENT_SOURCE_DIR}/dbghelp.dll"
-	"${CMAKE_CURRENT_SOURCE_DIR}/libmysql.dll"
 	"${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
 	"${CMAKE_CURRENT_SOURCE_DIR}/login-server.sh"
 	"${CMAKE_CURRENT_SOURCE_DIR}/logserv-sql.bat"
@@ -571,9 +570,7 @@ add_subdirectory( src )
 #####################################################################
 # final checks and warnings
 #
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-	message( WARNING "64bit should work, but is not recommended." )
-elseif( NOT CMAKE_SIZEOF_VOID_P EQUAL 4 )
+if( NOT (CMAKE_SIZEOF_VOID_P EQUAL 4) AND NOT (CMAKE_SIZEOF_VOID_P EQUAL 8) )
 	message( FATAL_ERROR "unexpected architecture (CMAKE_SIZEOF_VOID_P is ${CMAKE_SIZEOF_VOID_P})" )
 endif()
 list( LENGTH  TARGET_LIST  _LEN )
