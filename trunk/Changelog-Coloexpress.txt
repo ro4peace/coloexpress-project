@@ -1,6 +1,10 @@
 Date	Added
 
 2012/05/14
+	* Added 2 new Shops to Comodo.
+	* Correctly fixed r61 now.
+	* Restorded scripts_custom.conf since mine accidently got commited with my last commit.
+	* Added Magic Book Quest for Warlocks.
 	* Updated town.txt to allow Mailbox access in all the newer cities.
 	* Removed easter.txt event and the corresponding mobs in mob_db2.txt  and mob_db2.sql since they collide with Satan Morroc minions Mob ID's.
 	* Updated Magical Amplify Power cast time to only be affected by item bonuses.
