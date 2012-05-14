@@ -1,6 +1,11 @@
 Date	Added
 
 2012/05/14
+	* Added Pile Bunker Quest.
+	* Fixed Bard/Dancer songs duration exploit.
+	* Fixed now client "/" commands that use @command functionality will respect the atcommand_symbol config.
+	* Added an extra check to all instance script if there are actually 2 Players online in the Party to be able to enter the Dungeon.
+	* Added a few new statuses to not disappear upon death.
 	* CMake: update mysql to 5.5.25 as an external project; add winx64 version.
 	* CMake: don't auto-link dependencies (add support for other dependency types); always use <LIB>_DEPENDENCIES and <LIB>_DEFINITIONS (add support for other mechanics in 3rdparty); restrict the dbghelpplug plugin to 32bit only (needs updating); remove warning about building 64bit (no longer needed?).
 	* Added 2 new Shops to Comodo.
