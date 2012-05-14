@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/14
+	* Full revert of r63.
 	* Added Pile Bunker Quest.
 	* Fixed Bard/Dancer songs duration exploit.
 	* Fixed now client "/" commands that use @command functionality will respect the atcommand_symbol config.
