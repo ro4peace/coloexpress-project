@@ -1,6 +1,9 @@
 Date	Added
 
 2012/05/17
+	* Updated renewal's level modifier on damage formula.
+	* Made the formula into a set of macros for easy customization.
+	* Added a switch for this feature (due to popular demand) RENEWAL_LVDMG in renewal.h
 	* Fixed Howling of Mandragora cast time effect should now work properly.
 	* Fixed Arch Bishop laudra ramus ability to remove howling of mandragora effect.
 	* Added missing Sorcerer Insignias.
