@@ -1,6 +1,9 @@
 Date	Added
 
 2012/05/17
+	* Updated some Alberta NPC Locations to match with the new Map. Also updated the coordinates in the Alberta Guide NPC.
+	* Updated Monster spawns in Job change Quests to renewal.
+	* Some minor changes to the Arch Bishop Job change Quest.
 	* Added new command: @set
 	- Extremely helpful at debugging and by manipulating npc vars with ease.
 	- Examples:
