@@ -1,6 +1,10 @@
 Date	Added
 
 2012/05/17
+	* Removed pointless config in groups.conf
+	* Fixed Fear Breeze auto attack should now trigger properly.
+	* Fixed bug with renewal mode berserk not removing twohandquicken icon.
+	* Fixed Adrenaline Rush boost was updated to renewal standards.
 	* Updated renewal's level modifier on damage formula.
 	* Made the formula into a set of macros for easy customization.
 	* Added a switch for this feature (due to popular demand) RENEWAL_LVDMG in renewal.h
