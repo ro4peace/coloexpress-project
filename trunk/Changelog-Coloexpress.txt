@@ -1,6 +1,9 @@
 Date	Added
 
 2012/05/17
+	* Fixed Amplify Magic Power should now work properly on multi-hit magical skills.
+	* Fixed Masquerade-Groomy now removes Dragon and Warg.
+	* Fixed Implemented script command in checking/mounting Dragon, Warg and MADO Gear, also made a clean up regarding MADO Gear and Warg conditions.
 	* Made some NPC's into duplicates and fixed some && / || checks in the Arch Bishop Job change Quest.
 	* Bomb poring is now aggressive and explodes right away after it has been summoned.
 	* Added some more checks tot he Pile Bunker NPC.
