@@ -1,6 +1,7 @@
 Date	Added
 
 2012/05/20
+	* Fixed timerid error.(from my mistake)
 	* NPC Loaded by @loadnpc will now trigger their OnInit labels as they're loaded.
 	* Fixed @summon stuff trap-like skills no longer hit its allies removed wrong target-type check on battle.c (its set in skill.c and then passed as its righteous flag to battle_check_target).
 	* Fixed Expiatio now can be castable to other players.
