@@ -2388,6 +2388,8 @@ static const char* npc_parse_script(char* w1, char* w2, char* w3, char* w4, cons
 		npc_timerevent_export(nd, i);
 	}
 
+	nd->u.scr.timerid = INVALID_TIMER;
+
 	if( runOnInit ) {
 		char evname[EVENT_NAME_LENGTH];
 		struct event_data *ev;
