@@ -1,5 +1,11 @@
 Date	Added
 
+2012/05/20
+	* Added +11 and above refiner NPC.
+	* Added NPC to refine Oridecons / Eluniums to Cardium / Bradium.
+	* Added downrefitem script command and updated script_commands.txt with it.
+	* Updated refine_db.txt with probably custom values for +11 to +20 values.
+	* Some little script improvements to Suhnbi. (Enriched Elunium / Oridecon Upgrader.)
 2012/05/17
 	* Updated some Alberta NPC Locations to match with the new Map. Also updated the coordinates in the Alberta Guide NPC.
 	* Updated Monster spawns in Job change Quests to renewal.
