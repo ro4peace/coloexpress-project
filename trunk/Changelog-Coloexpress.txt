@@ -1,5 +1,10 @@
 Date	Added
 
+2012/05/22
+	* Fixed all new options should now be passed properly to clones and mobs.
+	* Fixed MO_EXTREMITYFIST should now consume all spirit sphere.
+	* Fixed SR_FALLENEMPIRE should now chain with SR_GATEOFHELL and SR_TIGERCANNON and add bonus damage.
+	* Updated SR_GATEOFHELL damage formula where sp has now contribution with the damage.
 2012/05/20
 	* Fixed timerid error.(from my mistake)
 	* NPC Loaded by @loadnpc will now trigger their OnInit labels as they're loaded.
