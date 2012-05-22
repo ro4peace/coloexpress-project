@@ -1,6 +1,9 @@
 Date	Added
 
 2012/05/22
+	* Added new script command: instance_check_party <PartyID>{,<amount>{,<min>{,<max>}}};
+	- Checks the Players Party if it meets the above set requirements. see script_commands.txt for more info.
+	* Fixed Quests should be checked correctly now.
 	* Fixed all new options should now be passed properly to clones and mobs.
 	* Fixed MO_EXTREMITYFIST should now consume all spirit sphere.
 	* Fixed SR_FALLENEMPIRE should now chain with SR_GATEOFHELL and SR_TIGERCANNON and add bonus damage.
