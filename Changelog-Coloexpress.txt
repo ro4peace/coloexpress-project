@@ -1,6 +1,9 @@
 Date	Added
 
 2012/05/22
+	* Fixed check quest in Brasilis puppy quest.
+	* An little update to the new script command "instance_check_party" in script_commands.txt
+	* Added 'instance_check_party' command to all instance scripts for proper checking if the invoking party meets the requirements to join the Memorial Dungeon.
 	* Added new script command: instance_check_party <PartyID>{,<amount>{,<min>{,<max>}}};
 	- Checks the Players Party if it meets the above set requirements. see script_commands.txt for more info.
 	* Fixed Quests should be checked correctly now.
