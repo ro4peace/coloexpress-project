@@ -1603,6 +1603,7 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 				wd.damage = sstatus->max_hp* 9/100;
 				wd.damage2 = 0;
 				break;
+#ifndef RENEWAL
 			case LK_SPIRALPIERCE:
 			case ML_SPIRALPIERCE:
 				if (sd) {
@@ -1629,6 +1630,7 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 						break;
 				}
 				break;
+#endif
 			case CR_SHIELDBOOMERANG:
 			case PA_SHIELDCHAIN:
 			case LG_SHIELDPRESS:
@@ -2197,17 +2199,14 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 						skillratio += -100 + 15 * 200;
 					RE_LVL_DMOD();
 					break;
-				case LG_SHIELDSPELL:
-					if( wflag&1 ) {
-						skillratio += 200;
-						if( sd ) {
-							struct item_data *shield_data = sd->inventory_data[sd->equip_index[EQI_HAND_L]];
-							if( shield_data )
-								skillratio *= shield_data->def;
-						} else
-							skillratio *= 9;
+				case LG_SHIELDSPELL:// [(Caster?s Base Level x 4) + (Shield DEF x 10) + (Caster?s VIT x 2)] %
+					if( sd ) {
+						struct item_data *shield_data = sd->inventory_data[sd->equip_index[EQI_HAND_L]];
+						skillratio = status_get_lv(src) * 4 + status_get_vit(src) * 2;
+						if( shield_data )
+							skillratio += shield_data->def * 10;
 					} else
-						skillratio += (sd) ? sd->shieldmdef * 20 : 1000;
+						skillratio += 2400;	//2500%
 					break;
 				case LG_MOONSLASHER:
 					skillratio += -100 + (120 * skill_lv + ((sd) ? pc_checkskill(sd,LG_OVERBRAND) : 5) * 80);
@@ -2429,6 +2428,9 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 			}
 		}
 		//Div fix.
+#ifdef RENEWAL
+		if( skill_num != LK_SPIRALPIERCE && skill_num != ML_SPIRALPIERCE)
+#endif
 		damage_div_fix(wd.damage, wd.div_);
 
 		//The following are applied on top of current damage and are stackable.
@@ -2600,13 +2602,42 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 				flag.idef2||flag.pdef2?0:-vit_def
 			);
 		}
+#ifdef RENEWAL
+		/**
+		* Racial/Size and etc modifications should not work with this formula(only the ATK is affected w/ mods) except for now, since RE ATK formula is not yet fully implemented in rA. [malufett]
+		* Formula: Floor[Floor(Weapon Weight/2)*skill level + ATK ]*(100%+50%*s.lvl) * 5 multi-hits
+		**/
+		if( skill_num == LK_SPIRALPIERCE || skill_num == ML_SPIRALPIERCE)
+		{
+			short index = sd?sd->equip_index[EQI_HAND_R]:0;
+			int weight = sstatus->rhw.atk2;
 
-		//Post skill/vit reduction damage increases
-		if( sc && skill_num != LK_SPIRALPIERCE && skill_num != ML_SPIRALPIERCE )
-		{	//SC skill damages
-			if(sc->data[SC_AURABLADE]) 
-				ATK_ADD(20*sc->data[SC_AURABLADE]->val1);
+			if (sd && index >= 0 &&
+				sd->inventory_data[index] &&
+				sd->inventory_data[index]->type == IT_WEAPON)
+				weight = sd->inventory_data[index]->weight/20;
+
+			ATK_ADD(weight * skill_lv);
+			ATK_RATE(100+50*skill_lv);
+
+			damage_div_fix(wd.damage, wd.div_);
 		}
+#endif
+		//Post skill/vit reduction damage increases
+		if( sc )
+		{	//SC skill damages
+			if(sc->data[SC_AURABLADE]
+#ifndef RENEWAL
+					&& skill_num != LK_SPIRALPIERCE && skill_num != ML_SPIRALPIERCE
+#endif
+			){
+				int lv = sc->data[SC_AURABLADE]->val1;
+#ifdef RENEWAL
+				lv *= ((skill_num == LK_SPIRALPIERCE || skill_num == ML_SPIRALPIERCE)?wd.div_:1); // +100 per hit in lv 5
+#endif
+				ATK_ADD(20*lv);
+			}
+}
 
 		//Refine bonus
 		if( sd && flag.weapon && skill_num != MO_INVESTIGATE && skill_num != MO_EXTREMITYFIST )
@@ -3476,6 +3507,12 @@ struct Damage battle_calc_magic_attack(struct block_list *src,struct block_list 
 						skillratio = (skillratio + 200) * skill_lv;
 						RE_LVL_DMOD();
 						break;
+					case LG_SHIELDSPELL:// [(Caster?s Base Level x 4) + (Shield MDEF x 100) + (Caster?s INT x 2)] %
+						if( sd ) {
+							skillratio = status_get_lv(src) * 4 + sd->shieldmdef * 100 + status_get_int(src) * 2;
+						} else
+							skillratio += 1900;	//2000%
+						break;
 					case WM_METALICSOUND:
 						skillratio += 120 * skill_lv + 60 * ( sd? pc_checkskill(sd, WM_LESSON) : 10 ) - 100;
 						break;
@@ -3969,9 +4006,6 @@ struct Damage battle_calc_misc_attack(struct block_list *src,struct block_list *
 	 **/
 	case GN_THORNS_TRAP:
 		md.damage = 100 + 200 * skill_lv + sstatus->int_;
-		break;
-	case GN_BLOOD_SUCKER:
-		md.damage = 200 + 100 * skill_lv + sstatus->int_;
 		break;
 	case GN_HELLS_PLANT_ATK:
 		md.damage = sstatus->int_ * 4 * skill_lv * (10 / (10 - pc_checkskill(sd,AM_CANNIBALIZE)));//Need accurate official formula. [Rytech]
