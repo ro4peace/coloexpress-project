@@ -1,6 +1,7 @@
 Date	Added
 
 2012/06/01
+	* Fixed compile error.(from my mistake)
 	* Fixed wrong areawarp coordinations in all arena rooms.
 	* Added check if the player invoking one of the Izlude Arena NPC's in sec_pri02 is actually a GM.
 	* Some other random stuff in arena files.
