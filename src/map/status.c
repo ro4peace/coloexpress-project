@@ -6833,7 +6833,6 @@ int status_change_start(struct block_list* bl,enum sc_type type,int rate,int val
 		case SC_DPOISON:
 		//Lose 10/15% of your life as long as it doesn't brings life below 25%
 		if (status->hp > status->max_hp>>2) {
-		{
 			int diff = status->max_hp*(bl->type==BL_PC?10:15)/100;
 			if (status->hp - diff < status->max_hp>>2)
 				diff = status->hp - (status->max_hp>>2);
