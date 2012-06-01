@@ -1,6 +1,10 @@
 Date	Added
 
 2012/06/01
+	* Fixed invalid item types in item_db.sql
+	* Added a warning when NPC shops sell items for 0z (FREE!)
+	* Fixed Ice Wall should now block mobs properly.
+	* Fixed minor performance improvement.
 	* Fixed guild emblems not showing on flags at server start.
 2012/05/31
 	* Fixed RA_CAMOUFLAGE where the animation(semi transparent effect) is not seen when sight is refreshed.
