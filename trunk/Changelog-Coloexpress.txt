@@ -1,6 +1,13 @@
 Date	Added
 
 2012/06/01
+	* Fixed GN_SLINGITEM item requirements(item throwables) should now works normally.
+	* Fixed GN_BLOOD_SUCKER should now work like official behavior.
+	* Fixed Spiral Pierce is now in RE.
+	* Fixed setmadogear now it accepts optional parameter(0=unmount 1=mount).
+	* Fixed check the price in the shop file, instead of id->value_buy.
+	* Fixed Instance NPCs will now be cleared properly.
+	* Fixed LG_SHIELDSPELL damage formula in physical and magic is now in official.
 	* Reduced 300+ copy-paste lines to 1 duplicated npc in eden_common.txt
 	* Replaced more unconverted 'inputstr' in several npc scripts, and changed to scope variables.
 	* Fixed invalid item types in item_db.sql
