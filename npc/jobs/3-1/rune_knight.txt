@@ -1,4 +1,4 @@
-prt_in,162,24,3	script	Splendid-Looking Knight	470,{
+﻿prt_in,162,24,3	script	Splendid-Looking Knight	470,{
 	if (Upper == 4) {
 		// custom translation
 		mes "[Rune Knight Manuel]";
@@ -3904,9 +3904,9 @@ job3_rune01,92,62,3	script	Kafra Employee#rk	114,{
 npc "sec_in02" "·ûÎÄÆïʿתְÈ볡¹ÜÀíԱ" 4_M_KNIGHT_SILVER 34 167 3 1 1
 	mes "ÇëÊäÈëÃÜÂ롣";
 	next;
-	set keyword,1854;
+	set .@keyword$, "1854";
 	input .@input$;
-	if (inputstr == keyword) {
+	if (.@input$ == .@keyword$) {
 		mes "·ûÎÄÆïʿתְ¹ÜÀíģ¿鿪ʼ";
 		next;
 		switch(select("¼ì²éȫ¾ֱäÁ¿:Ð޸Äȫ¾ֱäÁ¿")) {
