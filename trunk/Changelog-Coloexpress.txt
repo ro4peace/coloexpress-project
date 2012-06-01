@@ -1,5 +1,15 @@
 Date	Added
 
+2012/05/31
+	* Fixed RA_CAMOUFLAGE where the animation(semi transparent effect) is not seen when sight is refreshed.
+	* Fixed RA_CLUSTERBOMB now it has 1s delay to disappear when activated and does full damage in plants.
+	* Fixed Burning status fixed damage (1000+3% of MaxHP) and damage effect and walk delay.
+	* Fixed poison and edp poison now give proper exp to caster vs mobs.
+	* Fixed a buy/sell zeny exploit.
+	* Fixed characters are no longer able to bypass servers max level with @baselevel/@jlevl/etc.
+	* Added probably all 3rd Class related Shops.
+	* Fixed WL_DRAINLIFE HP absorption based on damage is now working properly.
+	* Fixed now it should do double damage on White Imprisoned targets and WL_WHITEIMPRISON should not work with bosses.
 2012/05/22
 	* Fixed check quest in Brasilis puppy quest.
 	* An little update to the new script command "instance_check_party" in script_commands.txt
