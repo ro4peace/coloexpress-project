@@ -1,6 +1,13 @@
 Date	Added
 
 2012/06/01
+	* Fixed wrong areawarp coordinations in all arena rooms.
+	* Added check if the player invoking one of the Izlude Arena NPC's in sec_pri02 is actually a GM.
+	* Some other random stuff in arena files.
+	* Fixed all EF_WIND effects should now work properly.
+	* Some minor improvements in the instance Scripts.
+	* Some minor improvements in the Eden Group NPC's.
+	* Fixed typo in Wanderer Pet Food NPC.
 	* Fixed GN_SLINGITEM item requirements(item throwables) should now works normally.
 	* Fixed GN_BLOOD_SUCKER should now work like official behavior.
 	* Fixed Spiral Pierce is now in RE.
