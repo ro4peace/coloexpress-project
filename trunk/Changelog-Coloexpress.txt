@@ -1,5 +1,7 @@
 Date	Added
 
+2012/06/01
+	* Fixed guild emblems not showing on flags at server start.
 2012/05/31
 	* Fixed RA_CAMOUFLAGE where the animation(semi transparent effect) is not seen when sight is refreshed.
 	* Fixed RA_CLUSTERBOMB now it has 1s delay to disappear when activated and does full damage in plants.
