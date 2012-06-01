@@ -1,6 +1,8 @@
 Date	Added
 
 2012/06/01
+	* Reduced 300+ copy-paste lines to 1 duplicated npc in eden_common.txt
+	* Replaced more unconverted 'inputstr' in several npc scripts, and changed to scope variables.
 	* Fixed invalid item types in item_db.sql
 	* Added a warning when NPC shops sell items for 0z (FREE!)
 	* Fixed Ice Wall should now block mobs properly.
