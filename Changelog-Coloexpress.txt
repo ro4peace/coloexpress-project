@@ -1,6 +1,15 @@
 Date	Added
 
 2012/06/10
+	* Removed eAAC scripts, which were outdated.(will be released in downloads section)
+	* Removed scripts in /Lance/ folder, which haven't been updated in years. (will be released in downloads section)
+	* Combined heal.txt and heal_payment.txt into one script, set options within file to enable or disable zeny requirement.
+	* Added choice in job changer if you allow third job changes.
+	* Updated warper with new towns and some dungeons.
+	* Card remover now has option to prevent or allow item destruction upon removing failure.
+	* Removed 2-2shop and replaced with a full itemmall.
+	* General file structure changes. (possibly more later)
+	* Added ability for all 2nd baby classes to change into their 3rd baby job doing the 3rd job change quest.
 	* Added missing repeatable EXP Quests.
 	* Fixed a bug in quests_13_1.txt where sometimes it wouldn't correctly or at all trigger the OnMyMobDead trigger.
 	* Updated quest_db.txt with some time durations.
