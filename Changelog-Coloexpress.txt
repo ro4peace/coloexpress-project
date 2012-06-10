@@ -1,6 +1,9 @@
 Date	Added
 
 2012/06/10
+	* Fixed sex changed shouldn't now make exploits regarding item bonuses.
+	* Fixed GN_HELLS_PLANT damage formula and behavior are now updated.
+	* Fixed RK_DRAGONTRAINING should now work normally.
 	* Added BaseClass explanation to script_commands.txt
 	* Some updates to the custom folder / the old eAAC Scripts which are now in there.
 	* Fixed custom/warper.txt prontera location to not collide with Ash Vacuum warper.
