@@ -1,5 +1,18 @@
 Date	Added
 
+2012/06/10
+	* Added missing repeatable EXP Quests.
+	* Fixed a bug in quests_13_1.txt where sometimes it wouldn't correctly or at all trigger the OnMyMobDead trigger.
+	* Updated quest_db.txt with some time durations.
+	* Added Header to Rune Knight Job change Quest.
+	* Fixed weapon distribution in Paradise Gear Quests.
+	* Fixed wrong warp location inside Paradise Head Quarters.
+	* Fixed a bug in security check.
+	* Added an security check for each player which is entering an instance to make sure that the cool down time can't be bypassed which would lead to abuses of the according instance dungeons.
+	* Some minor additions to the Magic Gear renter NPC.
+	* Fixed RK_DRAGONBREATH damage should now be reducible by defender and energy coat and be blocked by anti long ranged skills.
+	* Fixed typo in the new refining NPC Bestry.
+	* Enabled Gryphon renter NPC and added Magic Gear Master NPC (Mado Gear renter).
 2012/06/01
 	* Fixed compile error.(from my mistake)
 	* Fixed wrong areawarp coordinations in all arena rooms.
