@@ -1,5 +1,15 @@
 Date	Added
 
+2012/06/13
+	* Fixed Added missing min_group_id_to_connect functionality to login server.
+	* Fixed mapflag conflicts were displaying wrong message.
+	* Fixed Instances no longer leave "broken" timers behind. Instances also will destroy themselves upon @reloadscript since they break at that.
+	* Fixed clones with cloaking skill are no longer "invincible".
+	* Fixed vendings are no longer broken when character moves map or is recalled by a gm.
+	* Added new towns to the custom warper.
+	* Fixed a bug in the monster_race.txt where you would get stuck in the dialog window.
+	* Fixed a bug in 71-88 eden group mission npc's where you would get stuck in the dialog window.
+	* Fixed mob rebirth skill shall now function properly on newer clients.
 2012/06/10
 	* Fixed sex changed shouldn't now make exploits regarding item bonuses.
 	* Fixed GN_HELLS_PLANT damage formula and behavior are now updated.

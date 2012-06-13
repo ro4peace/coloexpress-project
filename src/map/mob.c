@@ -2552,15 +2552,18 @@ int mob_dead(struct mob_data *md, struct block_list *src, int type)
 	
 	map_freeblock_unlock();
 
-	if(pcdb_checkid(md->vd->class_))
-	{	//Player mobs are not removed automatically by the client.
-		clif_clearunit_delayed(&md->bl, CLR_OUTSIGHT,tick+3000);
-	} else
-		/**
-		 * We give the client some time to breath and this allows it to display anything it'd like with the dead corpose
-		 * For example, this delay allows it to display soul drain effect
-		 **/
-		clif_clearunit_delayed(&md->bl, CLR_DEAD, tick+250);
+	if( !rebirth ) {
+
+		if(pcdb_checkid(md->vd->class_)) {	//Player mobs are not removed automatically by the client.
+			clif_clearunit_delayed(&md->bl, CLR_OUTSIGHT,tick+3000);
+		} else
+			/**
+			 * We give the client some time to breath and this allows it to display anything it'd like with the dead corpose
+			 * For example, this delay allows it to display soul drain effect
+			 **/
+			clif_clearunit_delayed(&md->bl, CLR_DEAD, tick+250);
+
+	}
 
 	if(!md->spawn) //Tell status_damage to remove it from memory.
 		return 5; // Note: Actually, it's 4. Oh well...
@@ -3149,6 +3152,7 @@ int mobskill_use(struct mob_data *md, unsigned int tick, int event)
 					break;
 			}
 			if (!bl) continue;
+
 			x = bl->x;
 		  	y = bl->y;
 			// Look for an area to cast the spell around...
@@ -3195,6 +3199,7 @@ int mobskill_use(struct mob_data *md, unsigned int tick, int event)
 					break;
 			}
 			if (!bl) continue;
+
 			md->skillidx = i;
 			map_freeblock_lock();
 			if( !battle_check_range(&md->bl,bl,skill_get_range2(&md->bl, ms[i].skill_id,ms[i].skill_lv)) ||
@@ -3439,7 +3444,9 @@ int mob_clone_spawn(struct map_session_data *sd, int m, int x, int y, const char
 	//Finally, spawn it.
 	md = mob_once_spawn_sub(&sd->bl, m, x, y, "--en--",class_,event);
 	if (!md) return 0; //Failed?
-	
+
+	md->special_state.clone = 1;
+
 	if (master_id || flag || duration) { //Further manipulate crafted char.
 		if (flag&1) //Friendly Character
 			md->special_state.ai = 1;
