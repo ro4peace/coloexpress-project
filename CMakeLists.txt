@@ -14,6 +14,10 @@
 #   ENABLE_* : option to use an internal feature/code or not
 #   HAVE_*   : internal variable indicating if we have and are using something
 #
+# Maintainer: Fl?vio J. Saraiva (feel free to send complaints or suggestions)
+#   flaviojs @ eAthena forum/irc
+#   flaviojs2005 \A-T/ gmail <D.o,T> com
+#
 #####################################################################
 
 
@@ -209,19 +213,11 @@ endif()
 # (ref. bugreport:1003).
 #
 message( STATUS "Check for monotonic clock" )
-set( SOURCECODE
-	"#include <sys/time.h>\n"
-	"#include <time.h>\n"
-	"#include <unistd.h>\n"
-	"int main(int argc, char** argv){\n"
-	"  struct timespec tval;\n"
-	"  return clock_gettime(CLOCK_MONOTONIC, &tval);\n"
-	"}\n"
-	)
 find_library( RT_LIBRARY rt )# (optional, rt on Debian)
 mark_as_advanced( RT_LIBRARY )
 set( CMAKE_REQUIRED_LIBRARIES ${GLOBAL_LIBRARIES} ${RT_LIBRARY} )
-CHECK_C_SOURCE_RUNS( "${SOURCECODE}" HAVE_MONOTONIC_CLOCK )
+file( READ "${CMAKE_SOURCE_DIR}/3rdparty/cmake/tests/HAVE_MONOTONIC_CLOCK.c" _SOURCE )
+CHECK_C_SOURCE_RUNS( "${_SOURCE}" HAVE_MONOTONIC_CLOCK )
 if( HAVE_MONOTONIC_CLOCK )
 	message( STATUS "Check for monotonic clock - yes" )
 	set_property( CACHE GLOBAL_LIBRARIES    PROPERTY VALUE ${GLOBAL_LIBRARIES} ${RT_LIBRARY} )
@@ -369,6 +365,7 @@ elseif( ENABLE_PROFILER STREQUAL "gprof" )
 else()
 	message( FATAL_ERROR "invalid option ENABLE_PROFILER=${ENABLE_PROFILER} (valid options: ${PROFILER_OPTIONS})" )
 endif()
+
 
 #
 # Enable extra buildbot code (default=OFF)
