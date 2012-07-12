@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_INIT(rAthena)
-AC_REVISION($Revision: 15584 $)
+AC_REVISION($Revision$)
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR([src/common/cbasetypes.h])
 AC_CONFIG_FILES([Makefile src/common/Makefile])
 AC_CONFIG_FILES([3rdparty/mt19937ar/Makefile 3rdparty/libconfig/Makefile])
 AC_CONFIG_FILES([src/char/Makefile src/login/Makefile])
-AC_CONFIG_FILES([src/map/Makefile src/plugins/Makefile src/tool/Makefile])
+AC_CONFIG_FILES([src/map/Makefile src/tool/Makefile])
 
 AC_GNU_SOURCE
 
@@ -147,10 +147,9 @@ AC_ARG_ENABLE(
 AC_ARG_ENABLE(
 	[64bit],
 	AC_HELP_STRING(
-		[--enable-64bit],
+		[--disable-64bit],
 		[
-			Don't force 32 bit. (disabled by default)
-			64bit support is still being tested, not recommended for production servers.
+			Enforce 32bit output on x86_64 systems.
 		]
 	),
 	[
@@ -161,7 +160,30 @@ AC_ARG_ENABLE(
 			*) AC_MSG_ERROR([[invalid argument --enable-64bit=$enableval... stopping]]);;
 		esac
 	],
-	[enable_64bit="no"]
+	[enable_64bit="yes"]
+)
+
+
+#
+# LTO
+#
+AC_ARG_ENABLE(
+    [lto],
+    AC_HELP_STRING(
+        [--enable-lto],
+        [
+			Enables or Disables Linktime Code Optimization (LTO is enabled by default)
+        ]
+    ),
+    [
+        enable_lto="$enableval"
+        case $enableval in
+            "no");;
+            "yes");;
+            *) AC_MSG_ERROR([[invalid argument --enable-lto=$disableval... stopping]]);;
+        esac
+    ],
+    [enable_lto="yes"]
 )
 
 
@@ -276,6 +298,7 @@ AC_ARG_WITH(
 AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_CPP
+AC_PATH_PROG(AR, ar)
 AC_LANG([C])
 
 
@@ -325,6 +348,40 @@ AC_COMPILE_IFELSE(
 		CFLAGS="$OLD_CFLAGS"
 	]
 )
+
+
+#
+# LTO Support test
+#
+if test "$enable_lto" != "no" ; then
+
+	OLD_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -flto"
+
+	OLD_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$LDFLAGS -flto"
+
+	AC_MSG_CHECKING([whether $CC supports -flto])
+	AC_RUN_IFELSE(
+		[
+			int main(int argc, char **argv){
+               return 0;
+           }
+		],
+		[
+			AC_MSG_RESULT([yes])
+		],
+		[
+			AC_MSG_RESULT([no])
+			CFLAGS="$OLD_CFLAGS"
+			LDFLAGS="$OLD_LDFLAGS"
+		],
+		[
+			AC_MSG_RESULT([guessing no])
+		]
+	)
+fi
+
 
 
 AC_MSG_CHECKING([whether $CC supports -Wno-pointer-sign])
@@ -385,56 +442,6 @@ AC_COMPILE_IFELSE(
 	]
 )
 CFLAGS="$OLD_CFLAGS"
-
-
-#
-# -shared needs position independent code; some platforms emit it
-# always, others need -fPIC
-#
-AC_MSG_CHECKING([whether $CC needs -fPIC for shared objects])
-OLD_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -shared"
-WITH_PLUGINS="yes"
-AC_LINK_IFELSE(
-	[
-		int foo(void)
-		{
-			return 0;
-		}
-	],
-	[
-		AC_MSG_RESULT([no])
-		CFLAGS="$OLD_CFLAGS"
-	],
-	[
-		if test "$compiler_supports_pic" = "yes" ; then
-			# Verify if -shared really fails due to lack of -fPIC or something else
-			CFLAGS="$CFLAGS -fPIC"
-			AC_LINK_IFELSE(
-				[
-					int foo(void)
-					{
-						return 0;
-					}
-				],
-				[
-					AC_MSG_RESULT([yes])
-					CFLAGS="$OLD_CFLAGS -fPIC"
-				],
-				[
-					AC_MSG_RESULT([no, but fails for another reason])
-					AC_MSG_ERROR([compiler is unable to compile shared objects for an unhandled reason, please report this with attached config.log... stopping])
-				]
-			)
-		else
-			# Disable compilation of plugins (optional), so 'make all' does not fail
-			AC_MSG_RESULT([yes, but unsupported])
-			AC_MSG_NOTICE([compiler is unable to generate position independent code, disabled plugins (optional)])
-			WITH_PLUGINS="no"
-		fi
-	]
-)
-AC_SUBST([WITH_PLUGINS])
 
 
 #
