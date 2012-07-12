@@ -1,6 +1,21 @@
 Date	Added
 
 2012/07/12
+	* Used SVN Copy/Move so SVN History is preserved.
+	* Warper replaced with Euphy's Warper v1.2
+	* Stylist replaced with a much more efficient script
+	* Healer replaced with more efficient script
+	* MVP Arena heavily condensed, and text edited
+	* Removed logout suggestion in Reset NPC (why was that there?)
+	* Quest Warper added to scripts_custom.conf [bug fix]
+	* All folders in root directory removed except "battleground", "events", "quests"
+	* All non-essential scripts in root directory moved to "etc" folder
+	* A few files renamed for easier identification
+	* scripts_custom.conf reordered for easier identification
+	* Fixed parenthesis check in most 3rd job change quests.
+	* Partially rewrote Rune Knight job change quest.
+	* Rename some Warper NPC from Mina to Warp Agent.
+	* Fixed some comodo quest typos.
 	* A couple checks here and there to remove possible warnings.
 	* Fixed bug with banding.
 	* Fixed clients shall now display the robes properly.
