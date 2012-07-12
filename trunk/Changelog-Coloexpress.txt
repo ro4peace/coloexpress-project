@@ -1,6 +1,7 @@
 Date	Added
 
 2012/07/12
+	* Replaced more -> rAthena
 	* Used SVN Copy/Move so SVN History is preserved.
 	* Warper replaced with Euphy's Warper v1.2
 	* Stylist replaced with a much more efficient script
