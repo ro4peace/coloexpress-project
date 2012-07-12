@@ -8697,7 +8697,8 @@ int status_change_end_(struct block_list* bl, enum sc_type type, int tid, const 
 			if (sce->val4) { //Clear the group.
 				struct skill_unit_group* group = skill_id2group(sce->val4);
 				sce->val4 = 0;
-				skill_delunitgroup(group);
+				if( group ) /* might have been cleared before status ended, e.g. land protector */
+					skill_delunitgroup(group);
 			}
 			break;
 		case SC_KAAHI:
@@ -8780,22 +8781,19 @@ int status_change_end_(struct block_list* bl, enum sc_type type, int tid, const 
 			break;
 		case SC_NEUTRALBARRIER_MASTER:
 		case SC_STEALTHFIELD_MASTER:
-			if( sce->val2 )
-			{
+			if( sce->val2 ) {
 				struct skill_unit_group* group = skill_id2group(sce->val2);
 				sce->val2 = 0;
-				skill_delunitgroup(group);
+				if( group ) /* might have been cleared before status ended, e.g. land protector */
+					skill_delunitgroup(group);
 			}
 			break;
 		case SC_BANDING:
-			{
-				struct skill_unit_group *group;
-				if(sce->val4)
-				{
-					group = skill_id2group(sce->val4);
-					sce->val4 = 0;
+			if(sce->val4) {
+				struct skill_unit_group *group = skill_id2group(sce->val4);
+				sce->val4 = 0;
+				if( group ) /* might have been cleared before status ended, e.g. land protector */
 					skill_delunitgroup(group);
-				}
 			}
 			break;
 		case SC_CURSEDCIRCLE_ATKER:

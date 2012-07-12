@@ -1,5 +1,10 @@
 Date	Added
 
+2012/07/12
+	* A couple checks here and there to remove possible warnings.
+	* Fixed bug with banding.
+	* Fixed clients shall now display the robes properly.
+	* Updated @changelook to support robe id added missing instruction for already-supported id #6
 2012/06/13
 	* Fixed Added missing min_group_id_to_connect functionality to login server.
 	* Fixed mapflag conflicts were displaying wrong message.
