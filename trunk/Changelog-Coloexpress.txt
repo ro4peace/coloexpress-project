@@ -1,6 +1,7 @@
 Date	Added
 
 2012/07/12
+	* Fixed my mistake.
 	* Fixed Warp Portal will cease to function after warping first user if its target is the same point where it was casted.
 	* VC10 removed plugin system references from projects.
 	* VC9 is still missing / broken, ill do this today evening.
