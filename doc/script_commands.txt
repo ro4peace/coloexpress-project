@@ -3,9 +3,9 @@
 //===== By: ==================================================
 //= rAthena Dev Team
 //===== Current Version: =====================================
-//= $Revision: 15867 $
+//= $Revision: 16418 $
 //===== Last Updated: ========================================
-//= $LastChangedDate: 2012-04-16 12:54:11 +0700 (จ., 16 เม.ย. 2012) $
+//= $LastChangedDate: 2012-07-13 01:57:02 +0700 (ศ., 13 ก.ค. 2012) $
 //===== Description: =========================================
 //= A reference manual for the rAthena scripting language.
 //= Commands are sorted depending on their functionality.
@@ -531,8 +531,8 @@ MaxHp       - Maximum amount of hit points.
 Sp          - Current spell points.
 MaxSp       - Maximum amount of spell points
 BaseClass	- This will return the starter Class of the invoking Character.
-		  For example: If you're an Knight this would return Swordsman,
-		  or if you're an Bard it will return Archer.
+			  For example: If you're an Knight this would return Swordsman,
+			  or if you're an Bard it will return Archer.
 BaseJob     - This is sneaky, apparently meant for baby class support.
               This will supposedly equal Job_Acolyte regardless of whether the 
               character is an acolyte or a baby acolyte, for example.
@@ -1610,6 +1610,22 @@ in the previous example getarg(2,-1) would be 3 and getarg(3,-1) would be -1
 
 ---------------------------------------
 
+*getargcount()
+
+This function is used when you use the 'callsub' or 'callfunc' commands. In the 
+call you can specify arguments. This function will return the number of arguments 
+provided.
+
+Example:
+	callfunc "funcNPC",5,4,3;
+	...
+	function%TAB%script%TAB%funcNPC%TAB%{
+		set .@count, getargcount(); // 3
+		...
+	}
+
+---------------------------------------
+
 *return {<value>};
 
 This command causes the script execution to leave previously called function
@@ -1713,6 +1729,23 @@ prontera,150,150,0	script	TestNPC	123,{
 	}
 }
 
+
+---------------------------------------
+
+*is_function("<function name>")
+
+This command checks whether a function exists, returning 1 if function is found. 
+Otherwise, it will return 0.
+
+Example:
+	function	script	try	{
+		dothat;
+	}
+
+	-	script	test	-1,{
+		set .@try, is_function("try"); // 1
+		set .@not, is_function("not"); // 0
+	}
 
 ---------------------------------------
 
@@ -1964,6 +1997,31 @@ Example 2: counter-controlled loop
 		mes .@i;
 		set .@i, .@i - 1;
 	} while (.@i > 0);
+
+---------------------------------------
+
+*freeloop(<toggle>)
+
+Toggling this to enabled (1) allows the script instance to bypass the infinite loop 
+protection, allowing your script to loop as much as it may need. Disabling (0) will
+warn you if an infinite loop is detected.
+
+Example:
+	freeloop(1); // enable script to loop freely
+
+	//Be aware with what you do here.
+	for ( set .@i,0; .@i<.@bigloop; set .@i, .@i+1 ) {
+		dothis;
+		// will sleep the script for 1ms when detect an infinity loop to 
+		// let rathena do what it need to do (socket, timer, process, etc.)
+	}
+
+	freeloop(0); // disable
+
+	for ( set .@i,0; .@i<.@bigloop; set .@i, .@i+1 ) {
+		dothis;
+		// throw an infinity loop error
+	}
 
 ---------------------------------------
 
@@ -2241,8 +2299,6 @@ Lets say the ID of a party was saved as a global variable:
 ---------------------------------------
 
 *getpartymember <party id>{,<type>};
-
-Thank you to HappyDenn for all this information.
 
 This command will find all members of a specified party and returns their names 
 (or character id or account id depending on the value of "type") into an array
@@ -2668,6 +2724,8 @@ Valid types are:
 		if = 10000, then this item is sold in NPC shops only
 	4 - sex; 5 - equip; 6 - weight; 7 - atk; 8 - def; 9 - range;
 	10 - slot; 11 - look; 12 - elv; 13 - wlv; 14 - view id
+	
+	If RENEWAL is defined, 15 - matk
 
 Check sample in doc/sample/getiteminfo.txt
 
@@ -2706,7 +2764,10 @@ Type is the type of object to search for:
   0 - Character object
   1 - NPC object
   2 - Pet object
-  3 - Monster object.
+  3 - Monster object
+  4 - Homunculus object
+  5 - Mercenary object
+  6 - Elemental object
   
 While 3 is meant to look for a monster object, no searching will be done if you 
 specify type 3, and the function will always return -1.
@@ -3080,7 +3141,6 @@ This function works as a direct counterpart of 'getpetinfo':
 
 ---------------------------------------
 
-
 *petstat(<flag>)
 
 Returns current pet status, all are integers except name.
@@ -3107,17 +3167,28 @@ It will return -1 if there is no such monster (or the type value is invalid),
 or "null" if you requested the monster's name.
 
 Valid types are listed in const.txt:
-	MOB_NAME	0		MOB_LV	1
-	MOB_MAXHP	2		MOB_BASEEXP	3
-	MOB_JOBEXP	4		MOB_ATK1	5
-	MOB_ATK2	6		MOB_DEF	7
-	MOB_MDEF	8		MOB_STR	9
-	MOB_AGI		10		MOB_VIT		11
-	MOB_INT		12		JOB_DEX		13
-	MOB_LUK		14		MOB_RANGE	15
-	MOB_RANGE2	16		MOB_RANGE3	17
-	MOB_SIZE	18		MOB_RACE	19
-	MOB_ELEMENT	20		MOB_MODE	21
+	MOB_NAME	0
+	MOB_LV	1
+	MOB_MAXHP	2
+	MOB_BASEEXP	3
+	MOB_JOBEXP	4
+	MOB_ATK1	5
+	MOB_ATK2	6
+	MOB_DEF	7
+	MOB_MDEF	8
+	MOB_STR	9
+	MOB_AGI	10
+	MOB_VIT	11
+	MOB_INT	12
+	MOB_DEX	13
+	MOB_LUK	14
+	MOB_RANGE	15
+	MOB_RANGE2	16
+	MOB_RANGE3	17
+	MOB_SIZE	18
+	MOB_RACE	19
+	MOB_ELEMENT	20
+	MOB_MODE	21
 	MOB_MVPEXP	22
 
 Check sample in doc/sample/getmonsterinfo.txt
@@ -3379,16 +3450,57 @@ and 0 if they don't.
 *checkriding()
 
 If <flag> is 0 this command will remove the mount from the character.
-Otherwise it give the invoking character a PecoPeco (if they are a Knight 
-series class) or a GrandPeco (if they are a Crusader series class). Unlike 
-'setfalcon' and 'setcart' this will not work at all if they aren't of a class 
-which can ride.
+Otherwise it gives the invoking character a PecoPeco (if they are a Knight 
+series class), a GrandPeco (if they are a Crusader series class), or
+a Gryphon (if they are a Royal Guard). Unlike 'setfalcon' and 'setcart'
+this will not work at all if they aren't of a class which can ride.
 Note: the character needs to have the skill KN_RIDING to gain a mount
 
 The accompanying function will return 1 if the invoking character is riding a 
-bird and 0 if they don't.
+bird and 0 if they aren't.
 
     if (checkriding()) mes "PLEASE leave your bird outside! No riding birds on the floor here!";
+
+---------------------------------------
+
+*setdragon {<flag>};
+
+If <flag> is 0 this command will remove the mount from the character.
+Otherwise it gives the invoking character a dragon mount, which is
+checked using checkriding().
+Note: the character needs to have the skill KN_RIDING to gain a mount
+
+The accompanying function will return 1 if the invoking character is riding a 
+dragon and 0 if they aren't.
+
+---------------------------------------
+
+*setmadogear {<flag>};
+*checkmadogear()
+
+If <flag> is 0 this command will remove the mount from the character.
+Otherwise it gives the invoking character a Mado (if they are a Mechanic).
+
+The accompanying function will return 1 if the invoking character has a
+Mado and 0 if they don't.
+
+---------------------------------------
+
+*setmounting;
+*ismounting()
+
+Gives the invoking character a cash mount.  Unlike the other mount
+commands, it cannot be used to remove a cash mount.
+
+The accompanying function will return 1 if the invoking character has a
+mount and 0 if they don't.
+
+---------------------------------------
+
+*checkwug()
+
+This function will return 1 if the invoking character has a
+warg and 0 if they don't.
 
 ---------------------------------------
 
@@ -3408,14 +3520,13 @@ Return values for 'checkvending' are
 Example(s):
 	//This will check if Aaron is vending, and if so, put a message in front
 	//of the attached player saying Aaron is vending.
-
 	if (checkvending("Aaron"))
 		mes "Aaron is currently vending!";
 
 	//This will check if the attached player in a chat room or not.
 	if (checkchatting())
 		mes "You are currently in a chat room!";
-	
+
 ---------------------------------------
 
 *agitcheck()
@@ -3938,6 +4049,16 @@ wall), the character is pushed only up to the obstacle.
     pushpc DIR_EAST, 5;
 
 ---------------------------------------
+
+*get_revision()
+
+This command will return the SVN revision number that the server is
+currently running on.
+
+	if ( get_revision() >= 15000 )
+        mes "Welcome rAthena !";
+
+---------------------------------------
 \\
 4,1.- Item-related commands
 \\
@@ -3987,7 +4108,7 @@ quite a few item scripts. For more examples check just about any official script
 ---------------------------------------
 
 *getitem2 <item id>,<amount>,<identify>,<refine>,<attribute>,<card1>,<card2>,<card3>,<card4>{,<account ID>};
-*getitem2 "<Item name>",<amount>,<identify>,<refine>,<attribute>,<card1>,<card2>,<card3>,<card4>{,<account ID>};
+*getitem2 "<item name>",<amount>,<identify>,<refine>,<attribute>,<card1>,<card2>,<card3>,<card4>{,<account ID>};
 
 This command will give an amount of specified items to the invoking character. 
 If an optional account ID is specified, and the target character is currently 
@@ -4086,7 +4207,8 @@ this really cause.
 
 ---------------------------------------
 
-*getnameditem <item name|item id>,<Character name|character ID>;
+*getnameditem <item id>,<character name|character ID>;
+*getnameditem "<item name>",<character name|character ID>;
 
 -Note: there's a total of 4 possible combinations of this command.
 E.g: item name and character name, or with character id, etc...
@@ -4181,7 +4303,7 @@ database. If the name is not found, nothing will be deleted.
 ---------------------------------------
 
 *delitem2 <item id>,<amount>,<identify>,<refine>,<attribute>,<card1>,<card2>,<card3>,<card4>{,<account ID>};
-*delitem2 "<Item name>",<amount>,<identify>,<refine>,<attribute>,<card1>,<card2>,<card3>,<card4>{,<account ID>};
+*delitem2 "<item name>",<amount>,<identify>,<refine>,<attribute>,<card1>,<card2>,<card3>,<card4>{,<account ID>};
 
 This command will take a specified amount of items from the invoking/target character. 
 Check 'getitem2' to understand its expanded parameters.
@@ -4265,10 +4387,15 @@ target cursor is shown.
 
 This command will open a crafting window on the client connected to the invoking 
 character. The 'item level' is a number which determines what kind of a crafting 
-window will pop-up. You can see the full list of such item levels in 
-'db/produce_db.txt' which determines what can actually be produced.
-The window will not be empty only if the invoking character can actually produce 
-the items of that type and has the appropriate raw materials in their inventory.
+window will pop-up. 
+
+You can see the full list of such item levels in 'db/produce_db.txt' which determines 
+what can actually be produced. The window will not be empty only if the invoking 
+character can actually produce the items of that type and has the appropriate raw
+materials in their inventory.
+
+The success rate to produce the item is the same as the success rate of the skill
+associated with the item level. If there is no skill id, the success rate will be 50%.
 
 Valid item levels are:
 
@@ -4374,13 +4501,13 @@ since jAthena, so probably nobody knows for sure why is it so.
 
 *downrefitem <equipment slot>;
 
-This command will downgrade an item by - 1 in the specified equipment slot of the
+This command will downgrade an item by - 1 in the specified equipment slot of the 
 invoking character. So the item will not be destroyed unlike in the failedrefitem script command.
 This will also display a 'refine failure' effect on the character and put appropriate
 messages into their chat window.
 
-The official scripts seems to use the 'downrefitem' command as a function
-instead: 'downrefitem(<number>)' but it returns nothing on the stack. This is
+The official scripts seems to use the 'downrefitem' command as a function 
+instead: 'downrefitem(<number>)' but it returns nothing on the stack. This is 
 since jAthena, so probably nobody knows for sure why is it so.
 
 ---------------------------------------
@@ -5261,11 +5388,13 @@ while hidden then revealing.... you can wonder around =P
 *doevent "<NPC object name>::<event label>";
 
 This command will start a new execution thread in a specified NPC object at the 
-specified label. The execution of the script running this command will not stop. 
-No parameters may be passed with a doevent call.
+specified label. The execution of the script running this command will not stop,
+and the event called by the 'doevent' command will not run until the invoking
+script has terminated. No parameters may be passed with a doevent call.
 
 The script of the NPC object invoked in this manner will run as if it's been 
-invoked by the RID that was active in the script that issued a 'doevent'.
+invoked by the RID that was active in the script that issued a 'doevent'. As
+such, the command will not work if an RID is not attached.
 
     place,100,100,1%TAB%script%TAB%NPC%TAB%53,{
         mes "This is what you will see when you click me";
@@ -5283,13 +5412,16 @@ invoked by the RID that was active in the script that issued a 'doevent'.
 
 *donpcevent "{NPC NAME}::<event label>";
 
-This command invokes the event label code within an another NPC or NPCs. If
-event label has the form "NpcName::OnLabel", then only given NPC's event label
-will be invoked (much like 'goto' into another NPC). If the form is "::OnLabel"
-(NpcName omitted), the event code of all NPCs with given label will be invoked,
-one after another. In both cases the invoked script will run without an attached
-RID, whether or not the invoking script was attached to a player. The event
-label name is required to start with On.
+This command invokes the event label code within an another NPC or NPCs. It
+starts a separate instance of execution, and the invoking NPC will resume
+execution its immediately.
+
+If the supplied event label has the form "NpcName::OnLabel", then only given
+NPC's event label will be invoked (much like 'goto' into another NPC). If the
+form is "::OnLabel" (NPC name omitted), the event code of all NPCs with given
+label will be invoked, one after another. In both cases the invoked script
+will run without an attached RID, whether or not the invoking script was
+attached to a player. The event label name is required to start with "On".
 
 This command can be used to make other NPCs act, as if they were responding to
 the invoking NPC's actions, such as using an emotion or talking.
@@ -6166,7 +6298,6 @@ placement of the illustration and takes following values:
     3 - middle of screen in a movable window with an empty title bar 
     4 - middle of screen without the window header, but still movable 
 
-
 The picture is read from data\texture\유저인터페이스\illust, from both the GRF archive
 and data folder, and is required to be a bitmap. The file extension .bmp can be
 omitted. Magenta color (#ff00ff) is considered transparent. There is no limit
@@ -6279,7 +6410,7 @@ timer and ranking as will @pvpon GM command do.
 
 ---------------------------------------
 
-*atcommand "<command line>";
+*atcommand "<command>";
 
 This command will run the given command line exactly as if it was typed in from 
 the keyboard by the player connected to the invoking character, and that 
@@ -6295,7 +6426,7 @@ one.
 
 ---------------------------------------
 
-*charcommand <command>;
+*charcommand "<command>";
 
 This command will run the given command line exactly as if it was typed in from 
 the keyboard from a character that belonged to an account which had GM level 99.
@@ -6581,12 +6712,12 @@ The first letter is position 0.
 	
 	Returns the original string with the specified char inserted
 	at the specified index. If index is out of range, the char 
-	will be inserted on the end	of the string that it is closest.
+	will be inserted on the end of the string that it is closest.
 	Only the 1st char in the <char> parameter will be used.
 	
 	Example:
 	
-	setchar("laughter", "s", 0); //returns "slaughter"
+	insertchar("laughter", "s", 0); //returns "slaughter"
 	
 ---------------------------------------
 
@@ -6656,7 +6787,6 @@ The first letter is position 0.
 	//.@my_array$[2]: "1965"
 	//.@my_array$[3]: "red"
 	//.@my_array$[4]: "PIE"
-	
 
 ---------------------------------------
 
@@ -7019,6 +7149,7 @@ Example:
 	else (.@id < 0) { // Unspecified error while queuing instance.
 		...
 	}
+
 ---------------------------------------
 
 *instance_destroy {<instance id>};
@@ -7238,6 +7369,7 @@ If parameter "HUNTING" is supplied:
 	2  = you've killed all of the target monsters
 
 ---------------------------------------
+
 *showevent <state>, <color>;
 
 Show a colored mark in the mini-map like "viewpoint" and an emotion on top of a NPC.

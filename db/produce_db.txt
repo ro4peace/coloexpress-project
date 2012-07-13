@@ -553,15 +553,15 @@
 991,26,2494,1,920,100
 // Throwable HP Increase Potion (Small) [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 HP Potions (Small)
 13275,26,2494,1,6297,10,12422,10
-// Throwable HP Increase Potion (Medium) [10] <-- GN_CHANGEMATERIAL Lv1, 10 Throwing Bottle, 10 HP Potions (Medium)
+// Throwable HP Increase Potion (Medium) [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 HP Potions (Medium)
 13276,26,2494,1,6297,10,12423,10
-// Throwable HP Increase Potion (Large) [10] <-- GN_CHANGEMATERIAL Lv1, 10 Throwing Bottle, 10 HP Potions (Large)
+// Throwable HP Increase Potion (Large) [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 HP Potions (Large)
 13277,26,2494,1,6297,10,12424,10
-// Throwable SP Increase Potion (Small) [10] <-- GN_CHANGEMATERIAL Lv1, 10 Throwing Bottle, 10 SP Potions (Small)
+// Throwable SP Increase Potion (Small) [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 SP Potions (Small)
 13278,26,2494,1,6297,10,12425,10
-// Throwable SP Increase Potion (Medium) [10] <-- GN_CHANGEMATERIAL Lv1, 10 Throwing Bottle, 10 SP Potions (Medium)
+// Throwable SP Increase Potion (Medium) [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 SP Potions (Medium)
 13279,26,2494,1,6297,10,12426,10
-// Throwable SP Increase Potion (Large) [10] <-- GN_CHANGEMATERIAL Lv1, 10 Throwing Bottle, 10 SP Potions (Large)
+// Throwable SP Increase Potion (Large) [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 SP Potions (Large)
 13280,26,2494,1,6297,10,12427,10
 // Enrich Celermine Juice Throw [10] <-- GN_CHANGEMATERIAL Lv1, 10 'Throwing Bottle', 10 Enrich Celermine Juice
 13283,26,2494,1,6297,10,12437,10

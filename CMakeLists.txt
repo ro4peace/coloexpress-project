@@ -14,7 +14,7 @@
 #   ENABLE_* : option to use an internal feature/code or not
 #   HAVE_*   : internal variable indicating if we have and are using something
 #
-# Maintainer: Fl?vio J. Saraiva (feel free to send complaints or suggestions)
+# Maintainer: Flávio J. Saraiva (feel free to send complaints or suggestions)
 #   flaviojs @ rAthena forum/irc
 #   flaviojs2005 \A-T/ gmail <D.o,T> com
 #
@@ -136,6 +136,19 @@ if( Subversion_FOUND AND SVNVERSION )
 	endif()
 	message( STATUS "Getting svn branch - done" )
 endif()
+
+
+#
+# threads
+#
+message( STATUS "Detecting threads library" )
+set( CMAKE_THREAD_PREFER_PTHREAD 1 )
+find_package(Threads REQUIRED)
+if( CMAKE_THREAD_LIBS_INIT )
+	message( STATUS "Adding global library: ${FUNCTION_FLOOR_LIBRARIES}" )
+	set_property( CACHE GLOBAL_LIBRARIES  PROPERTY VALUE ${GLOBAL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} )
+endif()
+message( STATUS "Detecting threads library - done" )
 
 
 #

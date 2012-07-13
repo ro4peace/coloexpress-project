@@ -198,6 +198,30 @@ typedef uintptr_t uintptr;
 
 
 //////////////////////////////////////////////////////////////////////////
+// Add a 'sysint' Type which has the width of the platform we're compiled for.
+//////////////////////////////////////////////////////////////////////////
+#if defined(__GNUC__)
+	#if defined(__x86_64__)
+		typedef int64 sysint;
+		typedef uint64 usysint;
+	#else
+		typedef int32 sysint;
+		typedef uint32 usysint;
+	#endif
+#elif defined(_MSC_VER)
+	#if defined(_M_X64)
+		typedef int64 sysint;
+		typedef uint64 usysint;
+	#else
+		typedef int32 sysint;
+		typedef uint32 usysint;
+	#endif
+#else
+	#error Compiler / Platform is unsupported.
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////
 // some redefine of function redefines for some Compilers
 //////////////////////////////////////////////////////////////////////////
 #if defined(_MSC_VER) || defined(__BORLANDC__)
@@ -218,10 +242,18 @@ typedef uintptr_t uintptr;
 #define strtoull			_strtoui64
 #endif
 
-// keyword replacement in windows
-#ifdef _WIN32
+// keyword replacement
+#ifdef _MSC_VER
+// For MSVC (windows)
 #define inline __inline
+#define forceinline __forceinline
+#define ra_align(n) __declspec(align(n))
+#else
+// For GCC
+#define forceinline __attribute__((always_inline)) inline
+#define ra_align(n) __attribute__(( aligned(n) ))
 #endif
+
 
 /////////////////////////////
 // for those still not building c++

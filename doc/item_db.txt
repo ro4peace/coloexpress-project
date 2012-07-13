@@ -136,7 +136,9 @@ View: For normal items, defines a replacement view-sprite for the item (eg:
 		4: Shells
 		5: Grenades
 		6: Shuriken
-		7: Kunai, Cannonballs, Throwable Items (Sling Item)
+		7: Kunai
+		7: Cannonballs
+		7: Throwable Items (Sling Item)
 
 Script: Script to execute when the item is used/equipped.
 

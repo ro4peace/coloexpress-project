@@ -79,7 +79,7 @@
 #define MAX_ZENY 1000000000
 #define MAX_FAME 1000000000
 #define MAX_CART 100
-#define MAX_SKILL 3040
+#define MAX_SKILL 3100
 #define GLOBAL_REG_NUM 256
 #define ACCOUNT_REG_NUM 64
 #define ACCOUNT_REG2_NUM 16
@@ -139,8 +139,8 @@
 
 //Base Homun skill.
 #define HM_SKILLBASE 8001
-#define MAX_HOMUNSKILL 16
-#define MAX_HOMUNCULUS_CLASS	60	//[orn], Increased to 60 from 16 to allow new Homun-S.
+#define MAX_HOMUNSKILL 43
+#define MAX_HOMUNCULUS_CLASS	52	//[orn], Increased to 60 from 16 to allow new Homun-S.
 #define HM_CLASS_BASE 6001
 #define HM_CLASS_MAX (HM_CLASS_BASE+MAX_HOMUNCULUS_CLASS-1)
 
@@ -705,6 +705,7 @@ enum {
 	JOB_BABY_BISHOP,
 	JOB_BABY_MECHANIC,
 	JOB_BABY_CROSS,
+
 	JOB_BABY_GUARD,
 	JOB_BABY_SORCERER,
 	JOB_BABY_MINSTREL,

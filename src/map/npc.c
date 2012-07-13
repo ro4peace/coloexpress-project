@@ -1080,25 +1080,25 @@ int npc_globalmessage(const char* name, const char* mes)
 void run_tomb(struct map_session_data* sd, struct npc_data* nd)
 {
 	char buffer[200];
-	char time[10];
-
-	strftime(time, sizeof(time), "%H:%M", localtime(&nd->u.tomb.kill_time));
+    char time[10];
+	
+    strftime(time, sizeof(time), "%H:%M", localtime(&nd->u.tomb.kill_time));
 
 	// TODO: Find exact color?
 	snprintf(buffer, sizeof(buffer), msg_txt(657), nd->u.tomb.md->db->name);
-	clif_scriptmes(sd, nd->bl.id, buffer);
+    clif_scriptmes(sd, nd->bl.id, buffer);
 
-	clif_scriptmes(sd, nd->bl.id, msg_txt(658));
+    clif_scriptmes(sd, nd->bl.id, msg_txt(658));
 
-	snprintf(buffer, sizeof(buffer), msg_txt(659), time);
-	clif_scriptmes(sd, nd->bl.id, buffer);
-
-	clif_scriptmes(sd, nd->bl.id, msg_txt(660));
+    snprintf(buffer, sizeof(buffer), msg_txt(659), time);
+    clif_scriptmes(sd, nd->bl.id, buffer);
+	
+    clif_scriptmes(sd, nd->bl.id, msg_txt(660));
 
 	snprintf(buffer, sizeof(buffer), msg_txt(661), nd->u.tomb.killer_name[0] ? nd->u.tomb.killer_name : "Unknown");
-	clif_scriptmes(sd, nd->bl.id, buffer);
+    clif_scriptmes(sd, nd->bl.id, buffer);
 
-	clif_scriptclose(sd, nd->bl.id);
+    clif_scriptclose(sd, nd->bl.id);
 }
 
 /*==========================================
@@ -1121,17 +1121,18 @@ int npc_click(struct map_session_data* sd, struct npc_data* nd)
 		return 1;
 
 	switch(nd->subtype) {
-	case SHOP:
-		clif_npcbuysell(sd,nd->bl.id);
-		break;
-	case CASHSHOP:
-		clif_cashshop_show(sd,nd);
-		break;
-	case SCRIPT:
-		run_script(nd->u.scr.script,0,sd->bl.id,nd->bl.id);
-		break;
-	case TOMB:
-		run_tomb(sd,nd);
+		case SHOP:
+			clif_npcbuysell(sd,nd->bl.id);
+			break;
+		case CASHSHOP:
+			clif_cashshop_show(sd,nd);
+			break;
+		case SCRIPT:
+			run_script(nd->u.scr.script,0,sd->bl.id,nd->bl.id);
+			break;
+		case TOMB:
+			run_tomb(sd,nd);
+			break;
 	}
 
 	return 0;
@@ -1733,8 +1734,7 @@ void npc_unload_duplicates(struct npc_data* nd)
 	map_foreachnpc(npc_unload_dup_sub,nd->bl.id);
 }
 
-int npc_unload(struct npc_data* nd, bool single)
-{
+int npc_unload(struct npc_data* nd, bool single) {
 	nullpo_ret(nd);
 
 	npc_remove_map(nd);
@@ -1751,20 +1751,17 @@ int npc_unload(struct npc_data* nd, bool single)
 
 	if( (nd->subtype == SHOP || nd->subtype == CASHSHOP) && nd->src_id == 0) //src check for duplicate shops [Orcao]
 		aFree(nd->u.shop.shop_item);
-	else
-	if( nd->subtype == SCRIPT )
-	{
+	else if( nd->subtype == SCRIPT ) {
 		struct s_mapiterator* iter;
 		struct block_list* bl;
 
-		ev_db->foreach(ev_db,npc_unload_ev,nd->exname); //Clean up all events related
+		if( single )
+			ev_db->foreach(ev_db,npc_unload_ev,nd->exname); //Clean up all events related
 
 		iter = mapit_geteachpc();  
-		for( bl = (struct block_list*)mapit_first(iter); mapit_exists(iter); bl = (struct block_list*)mapit_next(iter) )  
-		{
-			struct map_session_data *sd = map_id2sd(bl->id);
-			if( sd && sd->npc_timer_id != INVALID_TIMER )
-			{
+		for( bl = (struct block_list*)mapit_first(iter); mapit_exists(iter); bl = (struct block_list*)mapit_next(iter) ) {
+			struct map_session_data *sd = ((TBL_PC*)bl);
+			if( sd && sd->npc_timer_id != INVALID_TIMER ) {
 				const struct TimerData *td = get_timer(sd->npc_timer_id);
 
 				if( td && td->id != nd->bl.id )
@@ -2399,17 +2396,17 @@ static const char* npc_parse_script(char* w1, char* w2, char* w3, char* w4, cons
 	if( runOnInit ) {
 		char evname[EVENT_NAME_LENGTH];
 		struct event_data *ev;
-
+		
 		snprintf(evname, ARRAYLENGTH(evname), "%s::OnInit", nd->exname);
-
+		
 		if( ( ev = (struct event_data*)strdb_get(ev_db, evname) ) ) {
-
+			
 			//Execute OnInit
 			run_script(nd->u.scr.script,ev->pos,0,nd->bl.id);
-
+			
 		}
 	}
-
+	
 	return end;
 }
 
@@ -2565,7 +2562,7 @@ const char* npc_parse_duplicate(char* w1, char* w2, char* w3, char* w4, const ch
 
 int npc_duplicate4instance(struct npc_data *snd, int m) {
 	char newname[NAME_LENGTH];
-
+	
 	if( map[m].instance_id == 0 )
 		return 1;
 
@@ -3513,7 +3510,7 @@ int npc_reload(void) {
 		npc_id - npc_new_min, npc_warp, npc_shop, npc_script, npc_mob, npc_cache_mob, npc_delay_mob);
 
 	do_final_instance();
-
+	
 	for( i = 0; i < ARRAYLENGTH(instance); ++i )
 		instance_init(instance[i].instance_id);
 
@@ -3530,12 +3527,10 @@ int npc_reload(void) {
 	}
 	return 0;
 }
-
 void do_clear_npc(void) {
 	db_clear(npcname_db);
 	db_clear(ev_db);
 }
-
 /*==========================================
  * I—¹
  *------------------------------------------*/

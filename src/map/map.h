@@ -13,7 +13,7 @@
 /**
  * [rAthena.org]
  **/
-#include "./config/core.h"
+#include "../config/core.h"
 
 #include <stdarg.h>
 
@@ -136,7 +136,6 @@ enum {
 	MAPID_BABY_ACOLYTE,
 	MAPID_BABY_MERCHANT,
 	MAPID_BABY_THIEF,
-	MAPID_BABY_TAEKWON,
 //Baby 2-1 Jobs
 	MAPID_SUPER_BABY = JOBL_BABY|JOBL_2_1|0x0,
 	MAPID_BABY_KNIGHT,
@@ -145,7 +144,6 @@ enum {
 	MAPID_BABY_PRIEST,
 	MAPID_BABY_BLACKSMITH,
 	MAPID_BABY_ASSASSIN,
-	MAPID_BABY_STAR_GLADIATOR,
 //Baby 2-2 Jobs
 	MAPID_BABY_CRUSADER = JOBL_BABY|JOBL_2_2|0x1,
 	MAPID_BABY_SAGE,
@@ -153,7 +151,6 @@ enum {
 	MAPID_BABY_MONK,
 	MAPID_BABY_ALCHEMIST,
 	MAPID_BABY_ROGUE,
-	MAPID_BABY_SOUL_LINKER,
 //3-1 Jobs
 	MAPID_SUPER_NOVICE_E = JOBL_THIRD|JOBL_2_1|0x0,
 	MAPID_RUNE_KNIGHT,
@@ -237,7 +234,7 @@ enum bl_type {
 	BL_NPC   = 0x080,
 	BL_CHAT  = 0x100,
 	BL_ELEM  = 0x200,
-
+	
 	BL_ALL   = 0xFFF,
 };
 
@@ -395,7 +392,8 @@ enum _sp {
 	SP_UNSTRIPABLE_WEAPON,SP_UNSTRIPABLE_ARMOR,SP_UNSTRIPABLE_HELM,SP_UNSTRIPABLE_SHIELD,  // 2034-2037
 	SP_INTRAVISION, SP_ADD_MONSTER_DROP_ITEMGROUP, SP_SP_LOSS_RATE, // 2038-2040
 	SP_ADD_SKILL_BLOW, SP_SP_VANISH_RATE, SP_MAGIC_SP_GAIN_VALUE, SP_MAGIC_HP_GAIN_VALUE, SP_ADD_CLASS_DROP_ITEM, //2041-2045
-	SP_WEAPON_MATK, SP_BASE_MATK, SP_SP_GAIN_RACE_ATTACK, SP_HP_GAIN_RACE_ATTACK //2046-2049
+	SP_WEAPON_MATK, SP_BASE_MATK, SP_SP_GAIN_RACE_ATTACK, SP_HP_GAIN_RACE_ATTACK, SP_SP_RATE_SKILL, //2046-2050
+	SP_SKILL_COOLDOWN,SP_SKILL_FIXEDCAST, SP_SKILL_VARIABLECAST, SP_FIXCASTRATE, SP_VARCASTRATE //2051-2055
 };
 
 enum _look {
@@ -683,6 +681,9 @@ struct map_session_data * map_nick2sd(const char*);
 struct mob_data * map_getmob_boss(int m);
 struct mob_data * map_id2boss(int id);
 
+// reload config file looking only for npcs
+void map_reloadnpc(bool clear);
+
 /// Bitfield of flags for the iterator.
 enum e_mapitflags
 {
@@ -735,15 +736,15 @@ extern char *GRF_PATH_FILENAME;
 
 //Useful typedefs from jA [Skotlex]
 typedef struct map_session_data TBL_PC;
-typedef struct npc_data TBL_NPC;
-typedef struct mob_data TBL_MOB;
-typedef struct flooritem_data TBL_ITEM;
-typedef struct chat_data TBL_CHAT;
-typedef struct skill_unit TBL_SKILL;
-typedef struct pet_data TBL_PET;
-typedef struct homun_data TBL_HOM;
-typedef struct mercenary_data TBL_MER;
-typedef struct elemental_data TBL_ELEM;
+typedef struct npc_data         TBL_NPC;
+typedef struct mob_data         TBL_MOB;
+typedef struct flooritem_data   TBL_ITEM;
+typedef struct chat_data        TBL_CHAT;
+typedef struct skill_unit       TBL_SKILL;
+typedef struct pet_data         TBL_PET;
+typedef struct homun_data       TBL_HOM;
+typedef struct mercenary_data   TBL_MER;
+typedef struct elemental_data	TBL_ELEM;
 
 #define BL_CAST(type_, bl) \
 	( ((bl) == (struct block_list*)NULL || (bl)->type != (type_)) ? (T ## type_ *)NULL : (T ## type_ *)(bl) )

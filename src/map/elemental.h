@@ -20,41 +20,41 @@
 #define EL_SKILLMODE_AGGRESSIVE 0x4
 
 struct elemental_skill {
-        unsigned short id, lv;
-        short mode;
+	unsigned short id, lv;
+	short mode;
 };
 
 struct s_elemental_db {
-        int class_;
-        char sprite[NAME_LENGTH], name[NAME_LENGTH];
-        unsigned short lv;
-        short range2, range3;
-        struct status_data status;
-        struct view_data vd;
-        struct elemental_skill skill[MAX_ELESKILLTREE];
+	int class_;
+	char sprite[NAME_LENGTH], name[NAME_LENGTH];
+	unsigned short lv;
+	short range2, range3;
+	struct status_data status;
+	struct view_data vd;
+	struct elemental_skill skill[MAX_ELESKILLTREE];
 };
 
 extern struct s_elemental_db elemental_db[MAX_ELEMENTAL_CLASS];
 
 struct elemental_data {
-        struct block_list bl;
-        struct unit_data ud;
-        struct view_data *vd;
-        struct status_data base_status, battle_status;
-        struct status_change sc;
-        struct regen_data regen;
-        
-        struct s_elemental_db *db;
-        struct s_elemental elemental;
-        char blockskill[MAX_SKILL];
-        
-        struct map_session_data *master;
-        int summon_timer;
-        int skill_timer;
-        
-        unsigned last_thinktime, last_linktime;
-        short min_chase;
-        int target_id, attacked_id;
+	struct block_list bl;
+	struct unit_data ud;
+	struct view_data *vd;
+	struct status_data base_status, battle_status;
+	struct status_change sc;
+	struct regen_data regen;
+	
+	struct s_elemental_db *db;
+	struct s_elemental elemental;
+	char blockskill[MAX_SKILL];
+	
+	struct map_session_data *master;
+	int summon_timer;
+	int skill_timer;
+	
+	unsigned last_thinktime, last_linktime;
+	short min_chase;
+	int target_id, attacked_id;
 };
 
 bool elemental_class(int class_);

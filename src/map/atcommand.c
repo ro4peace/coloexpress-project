@@ -173,7 +173,7 @@ static const char* atcommand_help_string(const char* name)
 	{// failed to find the help property in the configuration file
 		return NULL;
 	}
-
+	
 	if( !config_setting_lookup_string( info, name, &str ) )
 	{// failed to find the matching help string
 		return NULL;
@@ -182,6 +182,7 @@ static const char* atcommand_help_string(const char* name)
 	// push the result from the method
 	return str;
 }
+
 
 /*==========================================
  * @send (used for testing packet sends from the client)
@@ -981,104 +982,111 @@ ACMD_FUNC(jobchange)
 		int i, found = 0;
 		const struct { char name[24]; int id; } jobs[] = {
 			{ "novice",		0 },
-			{ "swordsman",		1 },
+			{ "swordman",	1 },
+			{ "swordsman",	1 },
+			{ "magician",	2 },
 			{ "mage",		2 },
 			{ "archer",		3 },
-			{ "acolyte",		4 },
-			{ "merchant",		5 },
-			{ "thief",			6 },
+			{ "acolyte",	4 },
+			{ "merchant",	5 },
+			{ "thief",		6 },
 			{ "knight",		7 },
 			{ "priest",		8 },
-			{ "priestess",		8 },
+			{ "priestess",	8 },
 			{ "wizard",		9 },
-			{ "blacksmith",		10 },
+			{ "blacksmith",	10 },
 			{ "hunter",		11 },
-			{ "assassin",		12 },
-			{ "crusader",		14 },
+			{ "assassin",	12 },
+			{ "crusader",	14 },
 			{ "monk",		15 },
-			{ "sage",			16 },
+			{ "sage",		16 },
 			{ "rogue",		17 },
-			{ "alchemist",		18 },
-			{ "bard",			19 },
+			{ "alchemist",	18 },
+			{ "bard",		19 },
 			{ "dancer",		20 },
-			{ "super novice",		23 },
-			{ "supernovice",		23 },
-			{ "gunslinger",		24 },
-			{ "gunner",		24 },
-			{ "ninja",			25 },
-			{ "novice high",		4001 },
+			{ "super novice",	23 },
+			{ "supernovice",	23 },
+			{ "gunslinger",	24 },
+			{ "gunner",	24 },
+			{ "ninja",	25 },
+			{ "novice high",	4001 },
+			{ "high novice",	4001 },
+			{ "swordman high",	4002 },
 			{ "swordsman high",	4002 },
+			{ "magician high",	4003 },
 			{ "mage high",		4003 },
-			{ "archer high",		4004 },
-			{ "acolyte high",		4005 },
-			{ "merchant high",		4006 },
+			{ "archer high",	4004 },
+			{ "acolyte high",	4005 },
+			{ "merchant high",	4006 },
 			{ "thief high",		4007 },
-			{ "lord knight",		4008 },
-			{ "high priest",		4009 },
-			{ "high priestess",		4009 },
-			{ "high wizard",		4010 },
+			{ "lord knight",	4008 },
+			{ "high priest",	4009 },
+			{ "high priestess",	4009 },
+			{ "high wizard",	4010 },
 			{ "whitesmith",		4011 },
 			{ "sniper",		4012 },
-			{ "assassin cross",		4013 },
-			{ "paladin",		4015 },
-			{ "champion",		4016 },
-			{ "professor",		4017 },
-			{ "stalker",		4018 },
-			{ "creator",		4019 },
+			{ "assassin cross",	4013 },
+			{ "paladin",	4015 },
+			{ "champion",	4016 },
+			{ "professor",	4017 },
+			{ "stalker",	4018 },
+			{ "creator",	4019 },
 			{ "clown",		4020 },
 			{ "gypsy",		4021 },
-			{ "baby novice",		4023 },
+			{ "baby novice",	4023 },
+			{ "baby swordman",	4024 },
 			{ "baby swordsman",	4024 },
+			{ "baby magician",	4025 },
 			{ "baby mage",		4025 },
-			{ "baby archer",		4026 },
-			{ "baby acolyte",		4027 },
+			{ "baby archer",	4026 },
+			{ "baby acolyte",	4027 },
 			{ "baby merchant",	4028 },
 			{ "baby thief",		4029 },
-			{ "baby knight",		4030 },
-			{ "baby priest",		4031 },
-			{ "baby priestess",		4031 },
-			{ "baby wizard",		4032 },
-			{ "baby blacksmith",	4033 },
-			{ "baby hunter",		4034 },
-			{ "baby assassin",		4035 },
-			{ "baby crusader",		4037 },
+			{ "baby knight",	4030 },
+			{ "baby priest",	4031 },
+			{ "baby priestess",	4031 },
+			{ "baby wizard",	4032 },
+			{ "baby blacksmith",4033 },
+			{ "baby hunter",	4034 },
+			{ "baby assassin",	4035 },
+			{ "baby crusader",	4037 },
 			{ "baby monk",		4038 },
 			{ "baby sage",		4039 },
 			{ "baby rogue",		4040 },
-			{ "baby alchemist",		4041 },
+			{ "baby alchemist",	4041 },
 			{ "baby bard",		4042 },
-			{ "baby dancer",		4043 },
+			{ "baby dancer",	4043 },
 			{ "super baby",		4045 },
 			{ "taekwon",		4046 },
-			{ "taekwon boy",		4046 },
-			{ "taekwon girl",		4046 },
-			{ "star gladiator",		4047 },
-			{ "soul linker",		4049 },
+			{ "taekwon boy",	4046 },
+			{ "taekwon girl",	4046 },
+			{ "star gladiator",	4047 },
+			{ "soul linker",	4049 },
 			{ "gangsi",		4050 },
 			{ "bongun",		4050 },
 			{ "munak",		4050 },
 			{ "death knight",	4051 },
 			{ "dark collector",	4052 },
-			{ "rune knight",		4054 },
+			{ "rune knight",	4054 },
 			{ "warlock",		4055 },
 			{ "ranger",		4056 },
-			{ "arch bishop",		4057 },
+			{ "arch bishop",	4057 },
 			{ "mechanic",		4058 },
 			{ "guillotine",		4059 },
-			{ "rune knight2",		4060 },
+			{ "rune knight2",	4060 },
 			{ "warlock2",		4061 },
 			{ "ranger2",		4062 },
-			{ "arch bishop2",		4063 },
+			{ "arch bishop2",	4063 },
 			{ "mechanic2",		4064 },
-			{ "guillotine2",		4065 },
-			{ "royal guard",		4066 },
+			{ "guillotine2",	4065 },
+			{ "royal guard",	4066 },
 			{ "sorcerer",		4067 },
 			{ "minstrel",		4068 },
 			{ "wanderer",		4069 },
-			{ "sura",			4070 },
+			{ "sura",		4070 },
 			{ "genetic",		4071 },
-			{ "shadow chaser",		4072 },
-			{ "royal guard2",		4073 },
+			{ "shadow chaser",	4072 },
+			{ "royal guard2",	4073 },
 			{ "sorcerer2",		4074 },
 			{ "minstrel2",		4075 },
 			{ "wanderer2",		4076 },
@@ -1086,20 +1094,20 @@ ACMD_FUNC(jobchange)
 			{ "genetic2",		4078 },
 			{ "shadow chaser2",	4079 },
 			{ "baby rune",		4096 },
-			{ "baby warlock",		4097 },
-			{ "baby ranger",		4098 },
-			{ "baby bishop",		4099 },
-			{ "baby mechanic",		4100 },
+			{ "baby warlock",	4097 },
+			{ "baby ranger",	4098 },
+			{ "baby bishop",	4099 },
+			{ "baby mechanic",	4100 },
 			{ "baby cross",		4101 },
 			{ "baby guard",		4102 },
-			{ "baby sorcerer",		4103 },
-			{ "baby minstrel",		4104 },
-			{ "baby wanderer",		4105 },
+			{ "baby sorcerer",	4103 },
+			{ "baby minstrel",	4104 },
+			{ "baby wanderer",	4105 },
 			{ "baby sura",		4106 },
-			{ "baby genetic",		4107 },
-			{ "baby chaser",		4108 },
-			{ "super novice e",		4190 },
-			{ "super baby e",		4191 },
+			{ "baby genetic",	4107 },
+			{ "baby chaser",	4108 },
+			{ "super novice e",	4190 },
+			{ "super baby e",	4191 },
 			{ "kagerou",		4211 },
 			{ "oboro",		4212 },
 		};
@@ -1166,14 +1174,11 @@ ACMD_FUNC(jobchange)
 		}
 	}
 
-	if (job == 13 || job == 21 || job == 22 || job == 26 || job == 27
-		|| job == 4014 || job == 4022 || job == 4036 || job == 4044 || job == 4048
-		|| (job >= JOB_RUNE_KNIGHT2 && job <= JOB_MECHANIC_T2) || (job >= JOB_BABY_RUNE2 && job <= JOB_BABY_MECHANIC2)
+	if (job == 13 || job == 21 || job == 22 || job == 26 || job == 27 || job == 4014 || job == 4022 || job == 4036 || job == 4044 || job == 4048
+		 || (job >= JOB_RUNE_KNIGHT2 && job <= JOB_MECHANIC_T2) || (job >= JOB_BABY_RUNE2 && job <= JOB_BABY_MECHANIC2)
 	) // Deny direct transformation into dummy jobs
-		{
-			clif_displaymessage(fd, "You can not change to this job by command.");
-			return 0;
-		}
+		{clif_displaymessage(fd, "You can not change to this job by command.");
+		return 0;}
 
 	if (pcdb_checkid(job))
 	{
@@ -2006,7 +2011,7 @@ ACMD_FUNC(go)
 		{// send the text to the client
 			clif_displaymessage( fd, text );
 		}
-
+		
 		return -1;
 	}
 
@@ -2483,17 +2488,17 @@ ACMD_FUNC(gat)
  *------------------------------------------*/
 ACMD_FUNC(displaystatus)
 {
-	int i, type, flag, tick;
+	int i, type, flag, tick, val1 = 0, val2 = 0, val3 = 0;
 	nullpo_retr(-1, sd);
 	
-	if (!message || !*message || (i = sscanf(message, "%d %d %d", &type, &flag, &tick)) < 1) {
-		clif_displaymessage(fd, "Please, enter a status type/flag (usage: @displaystatus <status type> <flag> <tick>).");
+	if (!message || !*message || (i = sscanf(message, "%d %d %d %d %d %d", &type, &flag, &tick, &val1, &val2, &val3)) < 1) {
+		clif_displaymessage(fd, "Please, enter a status type/flag (usage: @displaystatus <status type> <flag> <tick> {<val1> {<val2> {<val3>}}}).");
 		return -1;
 	}
 	if (i < 2) flag = 1;
 	if (i < 3) tick = 0;
 
-	clif_status_change(&sd->bl, type, flag, tick, 0, 0, 0);
+	clif_status_change(&sd->bl, type, flag, tick, val1, val2, val3);
 
 	return 0;
 }
@@ -3417,7 +3422,7 @@ ACMD_FUNC(lostskill)
 
 		// attempt to find the text corresponding to this command
 		text = atcommand_help_string( command );
-
+		
 		// send the error message as always
 		clif_displaymessage(fd, "Please enter a quest skill number.");
 
@@ -3825,6 +3830,7 @@ ACMD_FUNC(reloadmobdb)
 	read_petdb();
 	merc_reload();
 	read_mercenarydb();
+	read_mercenary_skilldb();
 	reload_elementaldb();
 	clif_displaymessage(fd, msg_txt(98)); // Monster database has been reloaded.
 
@@ -3943,6 +3949,7 @@ ACMD_FUNC(reloadscript)
 	//atcommand_broadcast( fd, sd, "@broadcast", "You will feel a bit of lag at this point !" );
 
 	flush_fifos();
+	map_reloadnpc(true); // reload config files seeking for npcs
 	script_reload();
 	npc_reload();
 
@@ -5602,7 +5609,7 @@ ACMD_FUNC(changelook)
 {
 	int i, j = 0, k = 0;
 	int pos[7] = { LOOK_HEAD_TOP,LOOK_HEAD_MID,LOOK_HEAD_BOTTOM,LOOK_WEAPON,LOOK_SHIELD,LOOK_SHOES,LOOK_ROBE };
-
+	
 	if((i = sscanf(message, "%d %d", &j, &k)) < 1) {
 		clif_displaymessage(fd, "Usage: @changelook [<position>] <view id> -- [] = optional");
 		clif_displaymessage(fd, "Position: 1-Top 2-Middle 3-Bottom 4-Weapon 5-Shield 6-Shoes 7-Robe");
@@ -6242,7 +6249,7 @@ ACMD_FUNC(pettalk)
 					return 0;
 			}
 			sd->emotionlasttime = time(NULL);
-
+			
 			clif_emotion(&pd->bl, i);
 			return 0;
 		}
@@ -6692,10 +6699,10 @@ ACMD_FUNC(mobinfo)
 		else
 			sprintf(atcmd_output, "Monster: '%s'/'%s'/'%s' (%d)", mob->name, mob->jname, mob->sprite, mob->vd.class_);
 		clif_displaymessage(fd, atcmd_output);
-		sprintf(atcmd_output, " Lv:%d  HP:%d  Base EXP:%u  Job EXP:%u  HIT:%d  FLEE:%d", mob->lv, mob->status.max_hp, mob->base_exp, mob->job_exp, MOB_HIT(mob), MOB_FLEE(mob));
+		sprintf(atcmd_output, " Lv:%d  HP:%d  Base EXP:%u  Job EXP:%u  HIT:%d  FLEE:%d", mob->lv, mob->status.max_hp, mob->base_exp, mob->job_exp,MOB_HIT(mob), MOB_FLEE(mob));
 		clif_displaymessage(fd, atcmd_output);
 		sprintf(atcmd_output, " DEF:%d  MDEF:%d  STR:%d  AGI:%d  VIT:%d  INT:%d  DEX:%d  LUK:%d",
-			mob->status.def, mob->status.mdef, mob->status.str, mob->status.agi,
+			mob->status.def, mob->status.mdef,mob->status.str, mob->status.agi,
 			mob->status.vit, mob->status.int_, mob->status.dex, mob->status.luk);
 		clif_displaymessage(fd, atcmd_output);
 		
@@ -6709,12 +6716,18 @@ ACMD_FUNC(mobinfo)
 		strcpy(atcmd_output, " ");
 		j = 0;
 		for (i = 0; i < MAX_MOB_DROP; i++) {
+			int droprate;
 			if (mob->dropitem[i].nameid <= 0 || mob->dropitem[i].p < 1 || (item_data = itemdb_exists(mob->dropitem[i].nameid)) == NULL)
 				continue;
+			droprate = mob->dropitem[i].p;
+#ifdef RENEWAL_DROP
+			if( battle_config.atcommand_mobinfo_type )
+				droprate = droprate * party_renewal_drop_mod(sd->status.base_level - mob->lv) / 100;
+#endif
 			if (item_data->slot)
-				sprintf(atcmd_output2, " - %s[%d]  %02.02f%%", item_data->jname, item_data->slot, (float)mob->dropitem[i].p / 100);
+				sprintf(atcmd_output2, " - %s[%d]  %02.02f%%", item_data->jname, item_data->slot, (float)droprate / 100);
 			else
-				sprintf(atcmd_output2, " - %s  %02.02f%%", item_data->jname, (float)mob->dropitem[i].p / 100);
+				sprintf(atcmd_output2, " - %s  %02.02f%%", item_data->jname, (float)droprate / 100);
 			strcat(atcmd_output, atcmd_output2);
 			if (++j % 3 == 0) {
 				clif_displaymessage(fd, atcmd_output);
@@ -7144,7 +7157,7 @@ ACMD_FUNC(iteminfo)
 
 		if (item_data->maxchance == -1)
 			strcpy(atcmd_output, " - Available in the shops only.");
-		else if (item_data->maxchance)
+		else if (!battle_config.atcommand_mobinfo_type && item_data->maxchance)
 			sprintf(atcmd_output, " - Maximal monsters drop chance: %02.02f%%", (float)item_data->maxchance / 100 );
 		else
 			strcpy(atcmd_output, " - Monsters don't drop this item.");
@@ -8441,28 +8454,28 @@ ACMD_FUNC(new_mount) {
 
 ACMD_FUNC(accinfo) {
 	char query[NAME_LENGTH];
-
+	
 	if (!message || !*message || strlen(message) > NAME_LENGTH ) {
 		clif_displaymessage(fd, "(usage: @accinfo/@accountinfo <account_id/char name>).");
 		clif_displaymessage(fd, "You may search partial name by making use of '%' in the search, \"@accinfo %Mario%\" lists all characters whose name contain \"Mario\"");
 		return -1;
 	}
-
+	
 	//remove const type
 	safestrncpy(query, message, NAME_LENGTH);
-
+	
 	intif_request_accinfo( sd->fd, sd->bl.id, sd->group_id, query );
-
+	
 	return 0;
 }
-	
+
 /* [Ind] */
 ACMD_FUNC(set) {
 	char reg[32], val[128];
 	struct script_data* data;
 	int toset = 0;
 	bool is_str = false;
-
+	
 	if( !message || !*message || (toset = sscanf(message, "%32s %128[^\n]s", reg, val)) < 1  ) {
 		clif_displaymessage(fd, "Usage: @set <variable name> <value>");
 		clif_displaymessage(fd, "Usage: e.g. @set PoringCharVar 50");
@@ -8470,7 +8483,7 @@ ACMD_FUNC(set) {
 		clif_displaymessage(fd, "Usage: e.g. \"@set PoringCharVarSTR$\" outputs it's value, Super Duper String");
 		return -1;
 	}
-
+		
 	/* disabled variable types (they require a proper script state to function, so allowing them would crash the server) */
 	if( reg[0] == '.' ) {
 		clif_displaymessage(fd, "NPC Variables may not be used with @set");
@@ -8481,7 +8494,7 @@ ACMD_FUNC(set) {
 	}
 
 	is_str = ( reg[strlen(reg) - 1] == '$' ) ? true : false;
-
+	
 	if( toset >= 2 ) {/* we only set the var if there is an val, otherwise we only output the value */
 		if( is_str )
 			set_var(sd, reg, (void*) val);
@@ -8489,12 +8502,12 @@ ACMD_FUNC(set) {
 			set_var(sd, reg, (void*)__64BPRTSIZE((int)(atoi(val))));
 
 	}
-
+	
 	CREATE(data, struct script_data,1);
-
-
+	
+	
 	if( is_str ) {// string variable
-
+		
 		switch( reg[0] ) {
 			case '@':
 				data->u.str = pc_readregstr(sd, add_str(reg));
@@ -8512,7 +8525,7 @@ ACMD_FUNC(set) {
 				data->u.str = pc_readglobalreg_str(sd, reg);
 				break;
 		}
-
+		
 		if( data->u.str == NULL || data->u.str[0] == '\0' ) {// empty string
 			data->type = C_CONSTSTR;
 			data->u.str = "";
@@ -8520,9 +8533,9 @@ ACMD_FUNC(set) {
 			data->type = C_STR;
 			data->u.str = aStrdup(data->u.str);
 		}
-
+		
 	} else {// integer variable
-
+		
 		data->type = C_INT;
 		switch( reg[0] ) {
 			case '@':
@@ -8541,10 +8554,10 @@ ACMD_FUNC(set) {
 				data->u.num = pc_readglobalreg(sd, reg);
 				break;
 		}
-
+		
 	}
-
-
+	
+	
 	switch( data->type ) {
 		case C_INT:
 			sprintf(atcmd_output,"%s value is now :%d",reg,data->u.num);
@@ -8559,11 +8572,11 @@ ACMD_FUNC(set) {
 			sprintf(atcmd_output,"%s data type is not supported :%u",reg,data->type);
 			break;
 	}
-
+	
 	clif_displaymessage(fd, atcmd_output);
-
+	
 	aFree(data);
-
+	
 	return 0;
 }
 
@@ -8865,18 +8878,19 @@ static void atcommand_get_suggestions(struct map_session_data* sd, const char *n
 	AtCommandType type;
 	char* suggestions[MAX_SUGGESTIONS];
 	int count = 0;
-
+	
 	if (!battle_config.atcommand_suggestions_enabled)
 		return;
 
 	atcommand_iter = db_iterator(atcommand_db);
-	alias_iter = db_iterator(atcommand_alias_db);
-
+	alias_iter = db_iterator(atcommand_alias_db);	
+	
 	if (atcommand)
 		type = COMMAND_ATCOMMAND;
 	else
 		type = COMMAND_CHARCOMMAND;
 
+	
 	// First match the beginnings of the commands
 	for (command_info = dbi_first(atcommand_iter); dbi_exists(atcommand_iter) && count < MAX_SUGGESTIONS; command_info = dbi_next(atcommand_iter)) {
 		if ( strstr(command_info->command, name) == command_info->command && pc_can_use_command(sd, command_info->command, type) )
@@ -8893,7 +8907,7 @@ static void atcommand_get_suggestions(struct map_session_data* sd, const char *n
 			++count;
 		}
 	}
-
+	
 	// Fill up the space left, with full matches
 	for (command_info = dbi_first(atcommand_iter); dbi_exists(atcommand_iter) && count < MAX_SUGGESTIONS; command_info = dbi_next(atcommand_iter)) {
 		if ( strstr(command_info->command, name) != NULL && pc_can_use_command(sd, command_info->command, type) )
@@ -8918,7 +8932,7 @@ static void atcommand_get_suggestions(struct map_session_data* sd, const char *n
 
 		strcpy(buffer, msg_txt(205));
 		strcat(buffer,"\n");
-
+		
 		for(i=0; i < count; ++i)
 		{
 			strcat(buffer,suggestions[i]);

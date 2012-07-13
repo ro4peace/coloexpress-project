@@ -1125,7 +1125,7 @@ void login_auth_ok(struct login_session_data* sd)
 		WFIFOW(fd,0) = 0x81;
 		WFIFOB(fd,2) = 1; // 01 = Server closed
 		WFIFOSET(fd,3);
-		return;
+		return;		
 	}
 
 	server_num = 0;

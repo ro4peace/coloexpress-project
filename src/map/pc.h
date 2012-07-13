@@ -23,9 +23,6 @@
 #define MAX_PC_SKILL_REQUIRE 5
 #define MAX_PC_FEELHATE 3
 
-//For Warlock
-#define MAX_SPELLBOOK 10
-
 struct weapon_data {
 	int atkmods[3];
 	// all the variables except atkmods get zero'ed in each call of status_calc_pc
@@ -113,7 +110,7 @@ struct map_session_data {
 		unsigned int abra_flag : 2; // Abracadabra bugfix by Aru
 		unsigned int autocast : 1; // Autospell flag [Inkfish]
 		unsigned int autotrade : 1;	//By Fantik
-		unsigned int reg_dirty : 3; //By Skotlex (marks whether registry variables have been saved or not yet)
+		unsigned int reg_dirty : 4; //By Skotlex (marks whether registry variables have been saved or not yet)
 		unsigned int showdelay :1;
 		unsigned int showexp :1;
 		unsigned int showzeny :1;
@@ -261,7 +258,7 @@ struct map_session_data {
 	struct { //skillatk raises bonus dmg% of skills, skillheal increases heal%, skillblown increases bonus blewcount for some skills.
 		unsigned short id;
 		short val;
-	} skillatk[MAX_PC_BONUS], skillheal[5], skillheal2[5], skillblown[MAX_PC_BONUS], skillcast[MAX_PC_BONUS];
+	} skillatk[MAX_PC_BONUS], sprateskill[MAX_PC_BONUS], skillheal[5], skillheal2[5], skillblown[MAX_PC_BONUS], skillcast[MAX_PC_BONUS], skillcooldown[MAX_PC_BONUS], skillfixcast[MAX_PC_BONUS], skillvarcast[MAX_PC_BONUS];
 	struct {
 		short value;
 		int rate;
@@ -284,43 +281,45 @@ struct map_session_data {
 	struct s_autobonus autobonus[MAX_PC_BONUS], autobonus2[MAX_PC_BONUS], autobonus3[MAX_PC_BONUS]; //Auto script on attack, when attacked, on skill usage
 	// manually zeroed structures end here.
 	// zeroed vars start here.
-	int atk_rate;
-	int arrow_atk,arrow_ele,arrow_cri,arrow_hit;
-	int nsshealhp,nsshealsp;
-	int critical_def,double_rate;
-	int long_attack_atk_rate; //Long range atk rate, not weapon based. [Skotlex]
-	int near_attack_def_rate,long_attack_def_rate,magic_def_rate,misc_def_rate;
-	int ignore_mdef_ele;
-	int ignore_mdef_race;
-	int perfect_hit;
-	int perfect_hit_add;
-	int get_zeny_rate;
-	int get_zeny_num; //Added Get Zeny Rate [Skotlex]
-	int double_add_rate;
-	int short_weapon_damage_return,long_weapon_damage_return;
-	int magic_damage_return; // AppleGirl Was Here
-	int break_weapon_rate,break_armor_rate;
-	int crit_atk_rate;
-	int classchange; // [Valaris]
-	int speed_rate, speed_add_rate, aspd_add;
-	int itemhealrate2; // [Epoque] Increase heal rate of all healing items.
-	int shieldmdef;//royal guard's
-	unsigned int setitem_hash, setitem_hash2; //Split in 2 because shift operations only work on int ranges. [Skotlex]
-	
-	short splash_range, splash_add_range;
-	short add_steal_rate;
-	short add_heal_rate, add_heal2_rate;
-	short sp_gain_value, hp_gain_value, magic_sp_gain_value, magic_hp_gain_value;
-	short sp_vanish_rate;
-	short sp_vanish_per;
-	short sp_weapon_matk,sp_base_matk;
-	unsigned short unbreakable;	// chance to prevent ANY equipment breaking [celest]
-	unsigned short unbreakable_equip; //100% break resistance on certain equipment
-	unsigned short unstripable_equip;
+	struct {
+		int atk_rate;
+		int arrow_atk,arrow_ele,arrow_cri,arrow_hit;
+		int nsshealhp,nsshealsp;
+		int critical_def,double_rate;
+		int long_attack_atk_rate; //Long range atk rate, not weapon based. [Skotlex]
+		int near_attack_def_rate,long_attack_def_rate,magic_def_rate,misc_def_rate;
+		int ignore_mdef_ele;
+		int ignore_mdef_race;
+		int perfect_hit;
+		int perfect_hit_add;
+		int get_zeny_rate;
+		int get_zeny_num; //Added Get Zeny Rate [Skotlex]
+		int double_add_rate;
+		int short_weapon_damage_return,long_weapon_damage_return;
+		int magic_damage_return; // AppleGirl Was Here
+		int break_weapon_rate,break_armor_rate;
+		int crit_atk_rate;
+		int classchange; // [Valaris]
+		int speed_rate, speed_add_rate, aspd_add;
+		int itemhealrate2; // [Epoque] Increase heal rate of all healing items.
+		int shieldmdef;//royal guard's
+		unsigned int setitem_hash, setitem_hash2; //Split in 2 because shift operations only work on int ranges. [Skotlex]
+
+		short splash_range, splash_add_range;
+		short add_steal_rate;
+		short add_heal_rate, add_heal2_rate;
+		short sp_gain_value, hp_gain_value, magic_sp_gain_value, magic_hp_gain_value;
+		short sp_vanish_rate;
+		short sp_vanish_per;
+		short sp_weapon_matk,sp_base_matk;
+		unsigned short unbreakable;	// chance to prevent ANY equipment breaking [celest]
+		unsigned short unbreakable_equip; //100% break resistance on certain equipment
+		unsigned short unstripable_equip;
+	} bonus;
 
 	// zeroed vars end here.
 
-	int castrate,delayrate,hprate,sprate,dsprate;
+	int castrate,delayrate,hprate,sprate,dsprate,fixcastrate,varcastrate;
 	int hprecov_rate,sprecov_rate;
 	int matk_rate;
 	int critical_rate,hit_rate,flee_rate,flee2_rate,def_rate,def2_rate,mdef_rate,mdef2_rate;
@@ -420,13 +419,6 @@ struct map_session_data {
 		bool changed; // if true, should sync with charserver on next mailbox request
 	} mail;
 
-	// Reading SpellBook
-	struct {
-		unsigned short skillid;
-		unsigned char level;
-		unsigned char points;
-	} rsb[MAX_SPELLBOOK];
-
 	//Quest log system [Kevin] [Inkfish]
 	int num_quests;
 	int avail_quests;
@@ -474,7 +466,8 @@ struct map_session_data {
 
 };
 
-//Update this max as necessary. Raised from 80 to 84 as the Extended Super Novice needs it. [Rytech]
+//Update this max as necessary. 55 is the value needed for Super Baby currently
+//Raised to 84 since Expanded Super Novice needs it.
 #define MAX_SKILL_TREE 84
 //Total number of classes (for data storage)
 #define CLASS_COUNT (JOB_MAX - JOB_NOVICE_HIGH + JOB_MAX_BASIC)
@@ -516,14 +509,14 @@ enum weapon_type {
 
 enum ammo_type {
 	A_ARROW = 1,
-	A_DAGGER, //2
-	A_BULLET, //3
-	A_SHELL, //4
-	A_GRENADE, //5
+	A_DAGGER,   //2
+	A_BULLET,   //3
+	A_SHELL,    //4
+	A_GRENADE,  //5
 	A_SHURIKEN, //6
-	A_KUNAI, //7
-	A_CANNONBALL, //8
-	A_THROWWEAPON //9
+	A_KUNAI,     //7
+	A_CANNONBALL,	//8
+	A_THROWWEAPON	//9
 };
 
 //Equip position constants
@@ -610,7 +603,13 @@ enum e_pc_permission {
 #define pc_ishiding(sd)       ( (sd)->sc.option&(OPTION_HIDE|OPTION_CLOAK|OPTION_CHASEWALK) )
 #define pc_iscloaking(sd)     ( !((sd)->sc.option&OPTION_CHASEWALK) && ((sd)->sc.option&OPTION_CLOAK) )
 #define pc_ischasewalk(sd)    ( (sd)->sc.option&OPTION_CHASEWALK )
-#define pc_iscarton(sd)       ( (sd)->sc.option&OPTION_CART )
+
+#ifdef NEW_CARTS
+	#define pc_iscarton(sd)       ( (sd)->sc.data[SC_PUSH_CART] )
+#else
+	#define pc_iscarton(sd)       ( (sd)->sc.option&OPTION_CART )
+#endif
+
 #define pc_isfalcon(sd)       ( (sd)->sc.option&OPTION_FALCON )
 #define pc_isriding(sd)       ( (sd)->sc.option&OPTION_RIDING )
 #define pc_isinvisible(sd)    ( (sd)->sc.option&OPTION_INVISIBLE )
@@ -624,6 +623,8 @@ enum e_pc_permission {
 #define pc_isridingwug(sd) ( (sd)->sc.option&OPTION_WUGRIDER )
 // Mechanic Magic Gear
 #define pc_ismadogear(sd) ( (sd)->sc.option&OPTION_MADOGEAR )
+// Rune Knight Dragon
+#define pc_isridingdragon(sd) ( (sd)->sc.option&OPTION_DRAGON )
 
 #define pc_stop_walking(sd, type) unit_stop_walking(&(sd)->bl, type)
 #define pc_stop_attack(sd) unit_stop_attack(&(sd)->bl)
@@ -632,20 +633,22 @@ enum e_pc_permission {
 #define pc_check_weapontype(sd, type) ((type)&((sd)->status.weapon < MAX_WEAPON_TYPE? \
 	1<<(sd)->status.weapon:(1<<(sd)->weapontype1)|(1<<(sd)->weapontype2)))
 //Checks if the given class value corresponds to a player class. [Skotlex]
-#define pcdb_checkid(class_) \
+//JOB_NOVICE isn't checked for class_ is supposed to be unsigned
+#define pcdb_checkid_sub(class_) \
 ( \
-	( (class_) >= JOB_NOVICE      && (class_) <  JOB_MAX_BASIC   ) \
-||	( (class_) >= JOB_NOVICE_HIGH && (class_) <=  JOB_DARK_COLLECTOR         ) \
-||	( (class_) >= JOB_RUNE_KNIGHT && (class_) <=  JOB_MECHANIC_T2         ) \
-||	( (class_) >= JOB_BABY_RUNE && (class_) <=  JOB_BABY_MECHANIC2         ) \
-||	( (class_) >= JOB_SUPER_NOVICE_E && (class_) <=  JOB_SUPER_BABY_E         ) \
-||	( (class_) >= JOB_KAGEROU && (class_) <  JOB_MAX         ) \
+	( (class_) <  JOB_MAX_BASIC ) \
+||	( (class_) >= JOB_NOVICE_HIGH    && (class_) <= JOB_DARK_COLLECTOR ) \
+||	( (class_) >= JOB_RUNE_KNIGHT    && (class_) <= JOB_MECHANIC_T2    ) \
+||	( (class_) >= JOB_BABY_RUNE      && (class_) <= JOB_BABY_MECHANIC2 ) \
+||	( (class_) >= JOB_SUPER_NOVICE_E && (class_) <= JOB_SUPER_BABY_E   ) \
+||	( (class_) >= JOB_KAGEROU        && (class_) <  JOB_MAX            ) \
 )
+#define pcdb_checkid(class_) pcdb_checkid_sub((unsigned int)class_)
 
 // clientside display macros (values to the left/right of the "+")
 #ifdef RENEWAL
 	#define pc_leftside_atk(sd) ((sd)->battle_status.batk)
-	#define pc_rightside_atk(sd) ((sd)->battle_status.rhw.atk + (sd)->battle_status.lhw.atk + (sd)->battle_status.rhw.atk2 + (sd)->battle_status.lhw.atk2 + (sd)->battle_status.equipment_atk)
+	#define pc_rightside_atk(sd) ((sd)->battle_status.rhw.atk + (sd)->battle_status.lhw.atk + (sd)->battle_status.rhw.atk2 + (sd)->battle_status.lhw.atk2)
 	#define pc_leftside_def(sd) ((sd)->battle_status.def2)
 	#define pc_rightside_def(sd) ((sd)->battle_status.def)
 	#define pc_leftside_mdef(sd) ((sd)->battle_status.mdef2)
@@ -654,9 +657,9 @@ enum e_pc_permission {
 	#define pc_leftside_atk(sd) ((sd)->battle_status.batk + (sd)->battle_status.rhw.atk + (sd)->battle_status.lhw.atk)
 	#define pc_rightside_atk(sd) ((sd)->battle_status.rhw.atk2 + (sd)->battle_status.lhw.atk2)
 	#define pc_leftside_def(sd) ((sd)->battle_status.def)
-	#define pc_rightside_def(sd) ((sd)->battle_status.def2)
+	#define pc_rightside_def(sd) ((sd)->battle_status.def2)	
 	#define pc_leftside_mdef(sd) ((sd)->battle_status.mdef)
-	#define pc_rightside_mdef(sd) ((sd)->battle_status.mdef2)
+	#define pc_rightside_mdef(sd) ( (sd)->battle_status.mdef2 - ((sd)->battle_status.vit>>1) )
 #endif
 
 int pc_class2idx(int class_);
@@ -896,16 +899,10 @@ void pc_inventory_rental_add(struct map_session_data *sd, int seconds);
 int pc_read_motd(void); // [Valaris]
 int pc_disguise(struct map_session_data *sd, int class_);
 bool pc_isautolooting(struct map_session_data *sd, int nameid);
-/**
- * Mechanic (Mado Gear)
- **/
+
 void pc_overheat(struct map_session_data *sd, int val);
-/**
- * Royal Guard
- **/
+
 int pc_banding(struct map_session_data *sd, short skill_lv);
-/**
- * Item Cooldown persistency
- **/
+
 void pc_itemcd_do(struct map_session_data *sd, bool load);
 #endif /* _PC_H_ */
