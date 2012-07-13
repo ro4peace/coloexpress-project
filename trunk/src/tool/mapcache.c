@@ -198,7 +198,7 @@ int find_map(char *name)
 	int i;
 	struct map_info info;
 	size_t fileReadCount;
-
+	
 	fseek(map_cache_fp, sizeof(struct main_header), SEEK_SET);
 
 	for(i = 0; i < header.map_count; i++) {

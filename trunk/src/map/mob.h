@@ -9,9 +9,9 @@
 #include "map.h" // struct status_data, struct view_data, struct mob_skill
 #include "status.h" // struct status data, struct status_change
 #include "unit.h" // unit_stop_walking(), unit_stop_attack()
+#include "npc.h"
 
-
-#define MAX_RANDOMMONSTER 4
+#define MAX_RANDOMMONSTER 5
 
 // Change this to increase the table size in your mob_db to accomodate a larger mob database.
 // Be sure to note that IDs 4001 to 4048 are reserved for advanced/baby/expanded classes.
@@ -173,9 +173,9 @@ struct mob_data {
 	 * Did this monster summon something?
 	 * Used to flag summon deletions, saves a worth amount of memory
 	 **/
-	bool can_summon : 1;
+	bool can_summon;
 
-	int tomb_nid;
+	struct npc_data *tomb_npc;
 };
 
 

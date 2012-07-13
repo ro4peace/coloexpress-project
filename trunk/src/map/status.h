@@ -478,13 +478,14 @@ typedef enum sc_type {
 	SC_BEYONDOFWARCRY,
 	SC_UNLIMITEDHUMMINGVOICE,//410
 	SC_SITDOWN_FORCE,
+	SC_NETHERWORLD,
 	/**
 	 * Sura
 	 **/
 	SC_CRESCENTELBOW,
 	SC_CURSEDCIRCLE_ATKER,
 	SC_CURSEDCIRCLE_TARGET,
-	SC_LIGHTNINGWALK,//415
+	SC_LIGHTNINGWALK,//416
 	SC_RAISINGDRAGON,
 	SC_GT_ENERGYGAIN,
 	SC_GT_CHANGE,
@@ -492,27 +493,27 @@ typedef enum sc_type {
 	/**
 	 * Genetic
 	 **/
-	SC_GN_CARTBOOST,//420
+	SC_GN_CARTBOOST,//427
 	SC_THORNSTRAP,
 	SC_BLOODSUCKER,
 	SC_SMOKEPOWDER,
 	SC_TEARGAS,
-	SC_MANDRAGORA,//425
+	SC_MANDRAGORA,//426
 	SC_STOMACHACHE,
 	SC_MYSTERIOUS_POWDER,
 	SC_MELON_BOMB,
 	SC_BANANA_BOMB,
-	SC_BANANA_BOMB_SITDOWN,//430
+	SC_BANANA_BOMB_SITDOWN,//431
 	SC_SAVAGE_STEAK,
 	SC_COCKTAIL_WARG_BLOOD,
 	SC_MINOR_BBQ,
 	SC_SIROMA_ICE_TEA,
-	SC_DROCERA_HERB_STEAMED,//435
+	SC_DROCERA_HERB_STEAMED,//436
 	SC_PUTTI_TAILS_NOODLES,
 	SC_BOOST500,
 	SC_FULL_SWING_K,
 	SC_MANA_PLUS,
-	SC_MUSTLE_M,//440
+	SC_MUSTLE_M,//441
 	SC_LIFE_FORCE_F,
 	SC_EXTRACT_WHITE_POTION_Z,
 	SC_VITATA_500,
@@ -520,21 +521,21 @@ typedef enum sc_type {
 	/**
 	 * Shadow Chaser
 	 **/
-	SC__REPRODUCE,//445
+	SC__REPRODUCE,//446
 	SC__AUTOSHADOWSPELL,
 	SC__SHADOWFORM,
 	SC__BODYPAINT,
 	SC__INVISIBILITY,
-	SC__DEADLYINFECT,//450
+	SC__DEADLYINFECT,//451
 	SC__ENERVATION,
 	SC__GROOMY,
 	SC__IGNORANCE,
 	SC__LAZINESS,
-	SC__UNLUCKY,//455
+	SC__UNLUCKY,//456
 	SC__WEAKNESS,
 	SC__STRIPACCESSORY,
 	SC__MANHOLE,
-	SC__BLOODYLUST,//459
+	SC__BLOODYLUST,//460
 	/**
 	 * Elemental Spirits
 	 **/
@@ -542,53 +543,53 @@ typedef enum sc_type {
 	SC_CIRCLE_OF_FIRE_OPTION,
 	SC_FIRE_CLOAK,
 	SC_FIRE_CLOAK_OPTION,
-	SC_WATER_SCREEN,//464
+	SC_WATER_SCREEN,//465
 	SC_WATER_SCREEN_OPTION,
 	SC_WATER_DROP,
 	SC_WATER_DROP_OPTION,
 	SC_WATER_BARRIER,
-	SC_WIND_STEP,//469
+	SC_WIND_STEP,//470
 	SC_WIND_STEP_OPTION,
 	SC_WIND_CURTAIN,
 	SC_WIND_CURTAIN_OPTION,
 	SC_ZEPHYR,
-	SC_SOLID_SKIN,//474
+	SC_SOLID_SKIN,//475
 	SC_SOLID_SKIN_OPTION,
 	SC_STONE_SHIELD,
 	SC_STONE_SHIELD_OPTION,
 	SC_POWER_OF_GAIA,
-	SC_PYROTECHNIC,//479
+	SC_PYROTECHNIC,//480
 	SC_PYROTECHNIC_OPTION,
 	SC_HEATER,
 	SC_HEATER_OPTION,
 	SC_TROPIC,
-	SC_TROPIC_OPTION,//484
+	SC_TROPIC_OPTION,//485
 	SC_AQUAPLAY,
 	SC_AQUAPLAY_OPTION,
 	SC_COOLER,
 	SC_COOLER_OPTION,
-	SC_CHILLY_AIR,//489
+	SC_CHILLY_AIR,//490
 	SC_CHILLY_AIR_OPTION,
 	SC_GUST,
 	SC_GUST_OPTION,
 	SC_BLAST,
-	SC_BLAST_OPTION,//494
+	SC_BLAST_OPTION,//495
 	SC_WILD_STORM,
 	SC_WILD_STORM_OPTION,
 	SC_PETROLOGY,
 	SC_PETROLOGY_OPTION,
-	SC_CURSED_SOIL,//499
+	SC_CURSED_SOIL,//500
 	SC_CURSED_SOIL_OPTION,
 	SC_UPHEAVAL,
 	SC_UPHEAVAL_OPTION,
 	SC_TIDAL_WEAPON,
-	SC_TIDAL_WEAPON_OPTION,//504
+	SC_TIDAL_WEAPON_OPTION,//505
 	SC_ROCK_CRUSHER,
 	SC_ROCK_CRUSHER_ATK,
 	/* Guild Aura */
 	SC_LEADERSHIP,
 	SC_GLORYWOUNDS,
-	SC_SOULCOLD, //509
+	SC_SOULCOLD, //508
 	SC_HAWKEYES,
 	/* ... */
 	SC_ODINS_POWER,
@@ -596,11 +597,27 @@ typedef enum sc_type {
 	/* Sorcerer .extra */
 	SC_FIRE_INSIGNIA,
 	SC_WATER_INSIGNIA,
-	SC_WIND_INSIGNIA, //515
+	SC_WIND_INSIGNIA, //516
 	SC_EARTH_INSIGNIA,
-
-	SC_JYUMONJIKIRI = 780,
-
+	/* new pushcart */
+	SC_PUSH_CART,
+	/* Warlock Spell books */
+	SC_SPELLBOOK1,
+	SC_SPELLBOOK2,
+	SC_SPELLBOOK3,
+	SC_SPELLBOOK4,
+	SC_SPELLBOOK5,
+	SC_SPELLBOOK6,
+/**
+ * In official server there are only 7 maximum number of spell books that can be memorized
+ * To increase the maximum value just add another status type before SC_MAXSPELLBOOK (ex. SC_SPELLBOOK7, SC_SPELLBOOK8 and so on)
+ **/
+	SC_MAXSPELLBOOK,
+	/* homun-s */
+	SC_ANGRIFFS_MODUS,
+	SC_GOLDENE_FERSE,
+	SC_ERASER_CUTTER,
+	
 	SC_MAX, //Automatically updated max, used in for's to check we are within bounds.
 } sc_type;
 
@@ -1141,11 +1158,11 @@ enum si_type {
 	SI_STONE_SHIELD = 531,
 	SI_STONE_SHIELD_OPTION = 532,
 	SI_POWER_OF_GAIA = 533,
-//	SI_EL_WAIT = 534,
-//	SI_EL_PASSIVE = 535,
-//	SI_EL_DEFENSIVE = 536,
-//	SI_EL_OFFENSIVE = 537,
-//	SI_EL_COST = 538,
+	//	SI_EL_WAIT = 534,
+	//	SI_EL_PASSIVE = 535,
+	//	SI_EL_DEFENSIVE = 536,
+	//	SI_EL_OFFENSIVE = 537,
+	//	SI_EL_COST = 538,
 	SI_PYROTECHNIC = 539,
 	SI_PYROTECHNIC_OPTION = 540,
 	SI_HEATER = 541,
@@ -1326,6 +1343,7 @@ enum {
 	OPT1_STONEWAIT=6, //Petrifying
 	OPT1_BURNING,
 	OPT1_IMPRISON,
+	OPT1_CRYSTALIZE,
 };
 
 //opt2: Stackable status changes.
@@ -1369,14 +1387,9 @@ enum {
 	OPTION_SIGHT     = 0x00000001,
 	OPTION_HIDE      = 0x00000002,
 	OPTION_CLOAK     = 0x00000004,
-	OPTION_CART1     = 0x00000008,
 	OPTION_FALCON    = 0x00000010,
 	OPTION_RIDING    = 0x00000020,
 	OPTION_INVISIBLE = 0x00000040,
-	OPTION_CART2     = 0x00000080,
-	OPTION_CART3     = 0x00000100,
-	OPTION_CART4     = 0x00000200,
-	OPTION_CART5     = 0x00000400,
 	OPTION_ORCISH    = 0x00000800,
 	OPTION_WEDDING   = 0x00001000,
 	OPTION_RUWACH    = 0x00002000,
@@ -1393,9 +1406,20 @@ enum {
 	OPTION_DRAGON3   = 0x01000000,
 	OPTION_DRAGON4   = 0x02000000,
 	OPTION_DRAGON5   = 0x04000000,
-	OPTION_MOUNTING  = 0x08000000,//dull name (cuz ind named it :/)
-	// compound constants
+	OPTION_MOUNTING  = 0x08000000,
+	
+#ifndef NEW_CARTS
+	OPTION_CART1     = 0x00000008,
+	OPTION_CART2     = 0x00000080,
+	OPTION_CART3     = 0x00000100,
+	OPTION_CART4     = 0x00000200,
+	OPTION_CART5     = 0x00000400,
+	
+	/*  compound constant for older carts */
 	OPTION_CART      = OPTION_CART1|OPTION_CART2|OPTION_CART3|OPTION_CART4|OPTION_CART5,
+#endif
+	
+	// compound constants
 	OPTION_DRAGON    = OPTION_DRAGON1|OPTION_DRAGON2|OPTION_DRAGON3|OPTION_DRAGON4|OPTION_DRAGON5,
 	OPTION_MASK      = ~OPTION_INVISIBLE,
 };
@@ -1408,6 +1432,18 @@ enum manner_flags
 	MANNER_NOCOMMAND = 0x04,
 	MANNER_NOITEM    = 0x08,
 	MANNER_NOROOM    = 0x10,
+};
+
+/* Status Change State Flags */
+enum scs_flag {
+	SCS_NOMOVECOND      = 0x00000001, /* cond flag for nomove */
+	SCS_NOMOVE          = 0x00000002, /* unit unable to move */
+	SCS_NOPICKITEMCOND  = 0x00000004, /* cond flag for nopickitem */
+	SCS_NOPICKITEM      = 0x00000008, /* player unable to pick up items */
+	SCS_NODROPITEMCOND  = 0x00000010, /* cond flag for nodropitem */
+	SCS_NODROPITEM      = 0x00000020, /* player unable to drop items */
+	SCS_NOCASTCOND      = 0x00000040, /* cond flag for nocast */	
+	SCS_NOCAST          = 0x00000080, /* unit unable to cast skills */
 };
 
 //Define flags for the status_calc_bl function. [Skotlex]
@@ -1474,7 +1510,7 @@ struct status_data {
 		max_hp, max_sp;
 	unsigned short
 		str, agi, vit, int_, dex, luk,
-		batk, equipment_atk,
+		batk,
 		matk_min, matk_max,
 		speed,
 		amotion, adelay, dmotion,
@@ -1482,6 +1518,9 @@ struct status_data {
 	short 
 		hit, flee, cri, flee2,
 		def2, mdef2,
+#ifdef RENEWAL_ASPD
+		aspd_rate2,
+#endif
 		aspd_rate;
 	/**
 	 * defType is REMODE dependent and defined in src/map/config/data/const.h
@@ -1558,6 +1597,12 @@ struct status_change {
 	unsigned char count;
 	//TODO: See if it is possible to implement the following SC's without requiring extra parameters while the SC is inactive.
 	unsigned char jb_flag; //Joint Beat type flag
+	struct {
+		unsigned char move;
+		unsigned char pickup;
+		unsigned char drop;
+		unsigned char cast;
+	} cant;/* status change state flags */
 	//int sg_id; //ID of the previous Storm gust that hit you
 	short comet_x, comet_y; // Point where src casted Comet - required to calculate damage from this point
 /**

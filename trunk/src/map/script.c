@@ -48,6 +48,7 @@
 #include "mail.h"
 #include "script.h"
 #include "quest.h"
+#include "elemental.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1057,7 +1058,7 @@ const char* parse_variable(const char* p)
 	c_op type = C_NOP;
 	const char *p2 = NULL;
 	const char *var = p;
-
+			
 	// skip the variable where applicable
 	p = skip_word(p);
 	p = skip_space(p);
@@ -1126,7 +1127,7 @@ const char* parse_variable(const char* p)
 	{// end of line or invalid buffer
 		return NULL;
 	}
-
+	
 	// push the set function onto the stack
 	add_scriptl(buildin_set_ref);
 	add_scriptc(C_ARG);
@@ -1138,7 +1139,7 @@ const char* parse_variable(const char* p)
 
 	// increment the total curly count for the position in the script
 	++ syntax.curly_count;
-
+	
 	// parse the variable currently being modified
 	word = add_word(var);
 
@@ -1155,7 +1156,7 @@ const char* parse_variable(const char* p)
 		add_scriptl(buildin_getelementofarray_ref);
 		add_scriptc(C_ARG);
 		add_scriptl(word);
-
+			
 		// process the sub-expression for this assignment
 		p3 = parse_subexpr(p2 + 1, 1);
 		p3 = skip_space(p3);
@@ -1173,6 +1174,8 @@ const char* parse_variable(const char* p)
 	{// simply push the variable or value onto the stack
 		add_scriptl(word);
 	}
+	
+	add_scriptc(C_REF);
 
 	if( type == C_ADD_PP || type == C_SUB_PP )
 	{// incremental operator for the method
@@ -1191,10 +1194,10 @@ const char* parse_variable(const char* p)
 
 	// decrement the curly count for the position within the script
 	-- syntax.curly_count;
-
+	
 	// close the script by appending the function operator
 	add_scriptc(C_FUNC);
-
+		
 	// push the buffer from the method
 	return p;
 }
@@ -1402,7 +1405,7 @@ const char* parse_line(const char* p)
 	} else if(p[0] == '}') {
 		return parse_curly_close(p);
 	}
-
+		
 	// 構文関連の処理
 	p2 = parse_syntax(p);
 	if(p2 != NULL)
@@ -1418,7 +1421,7 @@ const char* parse_line(const char* p)
 
 	p = parse_callfunc(p,0,0);
 	p = skip_space(p);
-
+	
 	if(parse_syntax_for_flag) {
 		if( *p != ')' )
 			disp_error_message("parse_line: need ')'",p);
@@ -1740,7 +1743,7 @@ const char* parse_syntax(const char* p)
 			if(*p != ';')
 				disp_error_message("parse_syntax: need ';'",p);
 			p++;
-
+			
 			// ループ開始に飛ばす
 			sprintf(label,"goto __FR%x_BGN;",syntax.curly[pos].index);
 			syntax.curly[syntax.curly_count++].type = TYPE_NULL;
@@ -1751,7 +1754,7 @@ const char* parse_syntax(const char* p)
 			sprintf(label,"__FR%x_NXT",syntax.curly[pos].index);
 			l=add_str(label);
 			set_label(l,script_pos,p);
-
+			
 			// 次のループに入る時の処理
 			// for 最後の ')' を ';' として扱うフラグ
 			parse_syntax_for_flag = 1;
@@ -3209,11 +3212,21 @@ void op_2num(struct script_state* st, int op, int i1, int i2)
 /// Binary operators
 void op_2(struct script_state *st, int op)
 {
-	struct script_data* left;
+	struct script_data* left, leftref;
 	struct script_data* right;
+
+	leftref.type = C_NOP;
 
 	left = script_getdatatop(st, -2);
 	right = script_getdatatop(st, -1);
+
+	if (st->op2ref)
+	{
+		if (data_isreference(left))
+			leftref = *left;
+
+		st->op2ref = 0;
+	}
 
 	get_val(st, left);
 	get_val(st, right);
@@ -3236,14 +3249,24 @@ void op_2(struct script_state *st, int op)
 	if( data_isstring(left) && data_isstring(right) )
 	{// ss => op_2str
 		op_2str(st, op, left->u.str, right->u.str);
-		script_removetop(st, -3, -1);// pop the two values before the top one
+		script_removetop(st, leftref.type == C_NOP ? -3 : -2, -1);// pop the two values before the top one
+
+		if (leftref.type != C_NOP)
+		{
+			aFree(left->u.str);
+			*left = leftref;
+		}
 	}
 	else if( data_isint(left) && data_isint(right) )
 	{// ii => op_2num
 		int i1 = left->u.num;
 		int i2 = right->u.num;
-		script_removetop(st, -2, 0);
+
+		script_removetop(st, leftref.type == C_NOP ? -2 : -1, 0);
 		op_2num(st, op, i1, i2);
+
+		if (leftref.type != C_NOP)
+			*left = leftref;
 	}
 	else
 	{// invalid argument
@@ -3683,6 +3706,10 @@ void run_script_main(struct script_state *st)
 					st->state=END;
 				}
 			}
+			break;
+
+		case C_REF:
+			st->op2ref = 1;
 			break;
 
 		case C_NEG:
@@ -6075,9 +6102,6 @@ BUILDIN_FUNC(rentitem)
 		clif_additem(sd, 0, 0, flag);
 		return 1;
 	}
-
-	clif_rental_time(sd->fd, nameid, seconds);
-	pc_inventory_rental_add(sd, seconds);
 	
 	return 0;
 }
@@ -7146,7 +7170,7 @@ BUILDIN_FUNC(getequippercentrefinery)
  *------------------------------------------*/
 BUILDIN_FUNC(successrefitem)
 {
-	int i = -1,num,ep;
+	int i=-1,num,ep;
 	TBL_PC *sd;
 
 	num = script_getnum(st,2);
@@ -7200,7 +7224,7 @@ BUILDIN_FUNC(successrefitem)
  *------------------------------------------*/
 BUILDIN_FUNC(failedrefitem)
 {
-	int i = -1,num;
+	int i=-1,num;
 	TBL_PC *sd;
 
 	num = script_getnum(st,2);
@@ -7320,63 +7344,65 @@ BUILDIN_FUNC(bonus)
 		return 0; // no player attached
 
 	type = script_getnum(st,2);
-	switch( type )
-	{
-	case SP_AUTOSPELL:
-	case SP_AUTOSPELL_WHENHIT:
-	case SP_AUTOSPELL_ONSKILL:
-	case SP_SKILL_ATK:
-	case SP_SKILL_HEAL:
-	case SP_SKILL_HEAL2:
-	case SP_ADD_SKILL_BLOW:
-	case SP_CASTRATE:
-	case SP_ADDEFF_ONSKILL:
-		// these bonuses support skill names
-		val1 = ( script_isstring(st,3) ? skill_name2id(script_getstr(st,3)) : script_getnum(st,3) );
-		break;
-	default:
-		val1 = script_getnum(st,3);
-		break;
+	switch( type ) {
+		case SP_AUTOSPELL:
+		case SP_AUTOSPELL_WHENHIT:
+		case SP_AUTOSPELL_ONSKILL:
+		case SP_SKILL_ATK:
+		case SP_SKILL_HEAL:
+		case SP_SKILL_HEAL2:
+		case SP_ADD_SKILL_BLOW:
+		case SP_CASTRATE:
+		case SP_ADDEFF_ONSKILL:
+		case SP_SP_RATE_SKILL:
+		case SP_SKILL_COOLDOWN:
+		case SP_SKILL_FIXEDCAST:
+		case SP_SKILL_VARIABLECAST:
+			// these bonuses support skill names
+			val1 = ( script_isstring(st,3) ? skill_name2id(script_getstr(st,3)) : script_getnum(st,3) );
+			break;
+		default:
+			val1 = script_getnum(st,3);
+			break;
 	}
 
-	switch( script_lastdata(st)-2 )
-	{
-	case 1:
-		pc_bonus(sd, type, val1);
-		break;
-	case 2:
-		val2 = script_getnum(st,4);
-		pc_bonus2(sd, type, val1, val2);
-		break;
-	case 3:
-		val2 = script_getnum(st,4);
-		val3 = script_getnum(st,5);
-		pc_bonus3(sd, type, val1, val2, val3);
-		break;
-	case 4:
-		if( type == SP_AUTOSPELL_ONSKILL && script_isstring(st,4) )
-			val2 = skill_name2id(script_getstr(st,4)); // 2nd value can be skill name
-		else
+	switch( script_lastdata(st)-2 ) {
+		case 1:
+			pc_bonus(sd, type, val1);
+			break;
+		case 2:
 			val2 = script_getnum(st,4);
-
-		val3 = script_getnum(st,5);
-		val4 = script_getnum(st,6);
-		pc_bonus4(sd, type, val1, val2, val3, val4);
-		break;
-	case 5:
-		if( type == SP_AUTOSPELL_ONSKILL && script_isstring(st,4) )
-			val2 = skill_name2id(script_getstr(st,4)); // 2nd value can be skill name
-		else
+			pc_bonus2(sd, type, val1, val2);
+			break;
+		case 3:
 			val2 = script_getnum(st,4);
+			val3 = script_getnum(st,5);
+			pc_bonus3(sd, type, val1, val2, val3);
+			break;
+		case 4:
+			if( type == SP_AUTOSPELL_ONSKILL && script_isstring(st,4) )
+				val2 = skill_name2id(script_getstr(st,4)); // 2nd value can be skill name
+			else
+				val2 = script_getnum(st,4);
 
-		val3 = script_getnum(st,5);
-		val4 = script_getnum(st,6);
-		val5 = script_getnum(st,7);
-		pc_bonus5(sd, type, val1, val2, val3, val4, val5);
-		break;
-	default:
-		ShowDebug("buildin_bonus: unexpected number of arguments (%d)\n", (script_lastdata(st) - 1));
-		break;
+			val3 = script_getnum(st,5);
+			val4 = script_getnum(st,6);
+			pc_bonus4(sd, type, val1, val2, val3, val4);
+			break;
+		case 5:
+			if( type == SP_AUTOSPELL_ONSKILL && script_isstring(st,4) )
+				val2 = skill_name2id(script_getstr(st,4)); // 2nd value can be skill name
+			else
+				val2 = script_getnum(st,4);
+
+			val3 = script_getnum(st,5);
+			val4 = script_getnum(st,6);
+			val5 = script_getnum(st,7);
+			pc_bonus5(sd, type, val1, val2, val3, val4, val5);
+			break;
+		default:
+			ShowDebug("buildin_bonus: unexpected number of arguments (%d)\n", (script_lastdata(st) - 1));
+			break;
 	}
 
 	return 0;
@@ -7749,7 +7775,10 @@ BUILDIN_FUNC(setoption)
 		flag = script_getnum(st,3);
 	else if( !option ){// Request to remove everything.
 		flag = 0;
-		option = OPTION_CART|OPTION_FALCON|OPTION_RIDING;
+		option = OPTION_FALCON|OPTION_RIDING;
+#ifndef NEW_CARTS
+		option |= OPTION_CART;
+#endif
 	}
 	if( flag ){// Add option
 		if( option&OPTION_WEDDING && !battle_config.wedding_modifydisplay )
@@ -7865,7 +7894,7 @@ BUILDIN_FUNC(checkriding)
 	if( sd == NULL )
 		return 0;// no player attached, report source
 
-	if( pc_isriding(sd) || pc_isridingwug(sd) || sd->sc.option&OPTION_DRAGON )
+	if( pc_isriding(sd) || pc_isridingwug(sd) || pc_isridingdragon(sd) )
 		script_pushint(st, 1);
 	else
 		script_pushint(st, 0);
@@ -12342,6 +12371,8 @@ BUILDIN_FUNC(getsavepoint)
   *                                2 - Pet coord
   *                                3 - Mob coord (not released)
   *                                4 - Homun coord
+  *                                5 - Mercenary coord
+  *                                6 - Elemental coord
   *                     CharName$ - Name object. If miss or "this" the current object
   *
   *             Return:
@@ -12418,6 +12449,24 @@ BUILDIN_FUNC(getmapxy)
 
 			if (sd && sd->hd)
 				bl = &sd->hd->bl;
+			break;
+		case 5: //Get Mercenary Position
+			if(script_hasdata(st,6))
+				sd=map_nick2sd(script_getstr(st,6));
+			else
+				sd=script_rid2sd(st);
+
+			if (sd && sd->md)
+				bl = &sd->md->bl;
+			break;
+		case 6: //Get Elemental Position
+			if(script_hasdata(st,6))
+				sd=map_nick2sd(script_getstr(st,6));
+			else
+				sd=script_rid2sd(st);
+
+			if (sd && sd->ed)
+				bl = &sd->ed->bl;
 			break;
 		default:
 			ShowWarning("script: buildin_getmapxy: Invalid type %d\n", type);
@@ -12611,16 +12660,14 @@ BUILDIN_FUNC(isequipped)
 		return 0;
 	}
 
-	setitem_hash = sd->setitem_hash;
-	setitem_hash2 = sd->setitem_hash2;
-	for (i=0; id!=0; i++)
-	{
+	setitem_hash = sd->bonus.setitem_hash;
+	setitem_hash2 = sd->bonus.setitem_hash2;
+	for (i=0; id!=0; i++) {
 		FETCH (i+2, id) else id = 0;
 		if (id <= 0)
 			continue;
 		flag = 0;
-		for (j=0; j<EQI_MAX; j++)
-		{
+		for (j=0; j<EQI_MAX; j++) {
 			index = sd->equip_index[j];
 			if(index < 0) continue;
 			if(j == EQI_HAND_R && sd->equip_index[EQI_HAND_L] == index) continue;
@@ -12648,16 +12695,16 @@ BUILDIN_FUNC(isequipped)
 
 					hash = 1<<((j<5?j:j-5)*4 + k);
 					// check if card is already used by another set
-					if ((j<5?sd->setitem_hash:sd->setitem_hash2) & hash)
+					if ( ( j < 5 ? sd->bonus.setitem_hash : sd->bonus.setitem_hash2 ) & hash)
 						continue;
 
 					// We have found a match
 					flag = 1;
 					// Set hash so this card cannot be used by another
 					if (j<5)
-						sd->setitem_hash |= hash;
+						sd->bonus.setitem_hash |= hash;
 					else
-						sd->setitem_hash2 |= hash;
+						sd->bonus.setitem_hash2 |= hash;
 					break;
 				}
 			}
@@ -12669,10 +12716,9 @@ BUILDIN_FUNC(isequipped)
 			ret &= flag;
 		if (!ret) break;
 	}
-	if (!ret)
-  	{	//When check fails, restore original hash values. [Skotlex]
-		sd->setitem_hash = setitem_hash;
-		sd->setitem_hash2 = setitem_hash2;
+	if (!ret) {//When check fails, restore original hash values. [Skotlex]
+		sd->bonus.setitem_hash = setitem_hash;
+		sd->bonus.setitem_hash2 = setitem_hash2;
 	}
 	script_pushint(st,ret);
 	return 0;
@@ -15864,21 +15910,21 @@ BUILDIN_FUNC(instance_check_party)
 	}
 
 	for( i = 0; i < MAX_PARTY; i++ )
-		if( (pl_sd = p->data[i].sd) )
-			if(map_id2bl(pl_sd->bl.id)){
+		if( (pl_sd = p->data[i].sd) ) 
+			if(map_id2bl(pl_sd->bl.id)){ 
 				if(pl_sd->status.base_level < min){
 					script_pushint(st, 0);
-					return 0;
+					return 0; 
 				}else if(pl_sd->status.base_level > max){
 					script_pushint(st, 0);
 					return 0;
 				}
 					c++;
 			}
-
+	
 	if(c < amount){
 		script_pushint(st, 0); // Not enough Members in the Party to join Instance.
-	}else
+	}else	
 		script_pushint(st, 1);
 
 	return 0;
@@ -16132,7 +16178,7 @@ BUILDIN_FUNC(checkdragon) {
 	TBL_PC* sd;
 	if( (sd = script_rid2sd(st)) == NULL )
 		return 0;
-	if( sd->sc.option&OPTION_DRAGON )
+	if( pc_isridingdragon(sd) )
 		script_pushint(st,1);
 	else
 		script_pushint(st,0);
@@ -16156,7 +16202,7 @@ BUILDIN_FUNC(setdragon) {
 		return 0;
 	if( !pc_checkskill(sd,RK_DRAGONTRAINING) || (sd->class_&MAPID_THIRDMASK) != MAPID_RUNE_KNIGHT )
 		script_pushint(st,0);//Doesn't have the skill or it's not a Rune Knight
-	else if ( sd->sc.option&OPTION_DRAGON ) {//Is mounted; release
+	else if ( pc_isridingdragon(sd) ) {//Is mounted; release
 		pc_setoption(sd, sd->sc.option&~OPTION_DRAGON);
 		script_pushint(st,1);
 	} else {//Not mounted; Mount now.

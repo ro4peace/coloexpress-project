@@ -393,7 +393,7 @@ int map_moveblock(struct block_list *bl, int x1, int y1, unsigned int tick)
 	//TODO: Perhaps some outs of bounds checking should be placed here?
 	if (bl->type&BL_CHAR) {
 		sc = status_get_sc(bl);
-
+		
 		skill_unit_move(bl,tick,2);
 		status_change_end(bl, SC_CLOSECONFINE, INVALID_TIMER);
 		status_change_end(bl, SC_CLOSECONFINE2, INVALID_TIMER);
@@ -452,7 +452,7 @@ int map_moveblock(struct block_list *bl, int x1, int y1, unsigned int tick)
 					if( (d_bl = map_id2bl(sc->data[SC__SHADOWFORM]->val2)) == NULL || bl->m != d_bl->m || !check_distance_bl(bl,d_bl,skill_get_range(SC_SHADOWFORM,1)) )
 						status_change_end(bl,SC__SHADOWFORM,INVALID_TIMER);	
 				}
-
+				
 				if (sc->data[SC_PROPERTYWALK]
 					&& sc->data[SC_PROPERTYWALK]->val3 < skill_get_maxcount(sc->data[SC_PROPERTYWALK]->val1,sc->data[SC_PROPERTYWALK]->val2)
 					&& map_find_skill_unit_oncell(bl,bl->x,bl->y,SO_ELECTRICWALK,NULL,0) == NULL
@@ -460,7 +460,8 @@ int map_moveblock(struct block_list *bl, int x1, int y1, unsigned int tick)
 					&& skill_unitsetting(bl,sc->data[SC_PROPERTYWALK]->val1,sc->data[SC_PROPERTYWALK]->val2,x0, y0,0)) {
 						sc->data[SC_PROPERTYWALK]->val3++;
 				}
-
+				
+				
 			}
 			/* Guild Aura Moving */
 			if( bl->type == BL_PC && ((TBL_PC*)bl)->state.gmaster_flag ) {
@@ -512,8 +513,7 @@ int map_count_oncell(int m, int x, int y, int type)
  * Looks for a skill unit on a given cell
  * flag&1: runs battle_check_target check based on unit->group->target_flag
  */
-struct skill_unit* map_find_skill_unit_oncell(struct block_list* target,int x,int y,int skill_id,struct skill_unit* out_unit, int flag)
-{
+struct skill_unit* map_find_skill_unit_oncell(struct block_list* target,int x,int y,int skill_id,struct skill_unit* out_unit, int flag) {
 	int m,bx,by;
 	struct block_list *bl;
 	struct skill_unit *unit;
@@ -1663,8 +1663,9 @@ void map_deliddb(struct block_list *bl)
 /*==========================================
  * Standard call when a player connection is closed.
  *------------------------------------------*/
-int map_quit(struct map_session_data *sd)
-{
+int map_quit(struct map_session_data *sd) {
+	int i;
+	
 	if(!sd->state.active) { //Removing a player that is not active.
 		struct auth_node *node = chrif_search(sd->status.account_id);
 		if (node && node->char_id == sd->status.char_id &&
@@ -1722,8 +1723,7 @@ int map_quit(struct map_session_data *sd)
 			status_change_end(&sd->bl, SC_SLOWCAST, INVALID_TIMER);
 			status_change_end(&sd->bl, SC_CRITICALWOUND, INVALID_TIMER);
 		}
-		if (battle_config.debuff_on_logout&2)
-		{
+		if (battle_config.debuff_on_logout&2) {
 			status_change_end(&sd->bl, SC_MAXIMIZEPOWER, INVALID_TIMER);
 			status_change_end(&sd->bl, SC_MAXOVERTHRUST, INVALID_TIMER);
 			status_change_end(&sd->bl, SC_STEELBODY, INVALID_TIMER);
@@ -1731,6 +1731,12 @@ int map_quit(struct map_session_data *sd)
 			status_change_end(&sd->bl, SC_KAAHI, INVALID_TIMER);
 			status_change_end(&sd->bl, SC_SPIRIT, INVALID_TIMER);
 		}
+	}
+	
+	for( i = 0; i < EQI_MAX; i++ ) {
+		if( sd->equip_index[ i ] >= 0 )
+			if( !pc_isequip( sd , sd->equip_index[ i ] ) )
+				pc_unequipitem( sd , sd->equip_index[ i ] , 2 );
 	}
 	
 	// Return loot to owner
@@ -1742,7 +1748,7 @@ int map_quit(struct map_session_data *sd)
 		elemental_clean_effect(sd->ed);
 		unit_remove_map(&sd->ed->bl,CLR_TELEPORT);
 	}
-
+	
 	unit_remove_map_pc(sd,CLR_TELEPORT);
 	
 	if( map[sd->bl.m].instance_id )
@@ -2457,21 +2463,22 @@ int map_random_dir(struct block_list *bl, short *x, short *y)
 }
 
 // gat系
-inline static struct mapcell map_gat2cell(int gat)
-{
-	struct mapcell cell = {0};
-	switch( gat )
-	{
-	case 0: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // walkable ground
-	case 1: cell.walkable = 0; cell.shootable = 0; cell.water = 0; break; // non-walkable ground
-	case 2: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // ???
-	case 3: cell.walkable = 1; cell.shootable = 1; cell.water = 1; break; // walkable water
-	case 4: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // ???
-	case 5: cell.walkable = 0; cell.shootable = 1; cell.water = 0; break; // gap (snipable)
-	case 6: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // ???
-	default:
-		ShowWarning("map_gat2cell: unrecognized gat type '%d'\n", gat);
-		break;
+inline static struct mapcell map_gat2cell(int gat) {
+	struct mapcell cell;
+	
+	memset(&cell,0,sizeof(struct mapcell));
+	
+	switch( gat ) {
+		case 0: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // walkable ground
+		case 1: cell.walkable = 0; cell.shootable = 0; cell.water = 0; break; // non-walkable ground
+		case 2: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // ???
+		case 3: cell.walkable = 1; cell.shootable = 1; cell.water = 1; break; // walkable water
+		case 4: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // ???
+		case 5: cell.walkable = 0; cell.shootable = 1; cell.water = 0; break; // gap (snipable)
+		case 6: cell.walkable = 1; cell.shootable = 1; cell.water = 0; break; // ???
+		default:
+			ShowWarning("map_gat2cell: unrecognized gat type '%d'\n", gat);
+			break;
 	}
 
 	return cell;
@@ -3332,6 +3339,58 @@ int map_config_read(char *cfgName)
 	return 0;
 }
 
+void map_reloadnpc_sub(char *cfgName)
+{
+	char line[1024], w1[1024], w2[1024];
+	FILE *fp;
+
+	fp = fopen(cfgName,"r");
+	if( fp == NULL )
+	{
+		ShowError("Map configuration file not found at: %s\n", cfgName);
+		return;
+	}
+
+	while( fgets(line, sizeof(line), fp) )
+	{
+		char* ptr;
+
+		if( line[0] == '/' && line[1] == '/' )
+			continue;
+		if( (ptr = strstr(line, "//")) != NULL )
+			*ptr = '\n'; //Strip comments
+		if( sscanf(line, "%[^:]: %[^\t\r\n]", w1, w2) < 2 )
+			continue;
+
+		//Strip trailing spaces
+		ptr = w2 + strlen(w2);
+		while (--ptr >= w2 && *ptr == ' ');
+		ptr++;
+		*ptr = '\0';
+			
+		if (strcmpi(w1, "npc") == 0)
+			npc_addsrcfile(w2);
+		else if (strcmpi(w1, "import") == 0)
+			map_reloadnpc_sub(w2);
+		else
+			ShowWarning("Unknown setting '%s' in file %s\n", w1, cfgName);
+	}
+
+	fclose(fp);
+}
+
+void map_reloadnpc(bool clear)
+{
+	if (clear)
+		npc_addsrcfile("clear"); // this will clear the current script list
+
+#ifdef RENEWAL
+	map_reloadnpc_sub("npc/re/scripts_main.conf");
+#else
+	map_reloadnpc_sub("npc/pre-re/scripts_main.conf");
+#endif
+}
+
 int inter_config_read(char *cfgName)
 {
 	char line[1024],w1[1024],w2[1024];
@@ -3553,10 +3612,10 @@ void do_final(void)
 	for( sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) )
 		map_quit(sd);
 	mapit_free(iter);
-
+	
 	/* prepares npcs for a faster shutdown process */
 	do_clear_npc();
-
+	
 	// remove all objects on maps
 	for (i = 0; i < map_num; i++) {
 		ShowStatus("Cleaning up maps [%d/%d]: %s..."CL_CLL"\r", i+1, map_num, map[i].name);
@@ -3834,12 +3893,11 @@ int do_init(int argc, char *argv[])
 	}
 
 	map_config_read(MAP_CONF_NAME);
-#ifdef RENEWAL
-	/**
-	 * to make pre-re conflict safe
-	 **/
-	map_config_read("npc/scripts_renewal.conf");
-#endif
+	/* only temporary until sirius's datapack patch is complete  */
+	
+	// loads npcs
+	map_reloadnpc(false);
+
 	chrif_checkdefaultlogin();
 
 	if (!map_ip_set || !char_ip_set) {
@@ -3916,7 +3974,7 @@ int do_init(int argc, char *argv[])
 	do_init_unit();
 	do_init_battleground();
 	do_init_duel();
-
+	
 	npc_event_do_oninit();	// npcのOnInitイベント?行
 
 	if( console )

@@ -1005,7 +1005,7 @@ int mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 26, SQLDT_INT,    &p->guild_id, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 27, SQLDT_INT,    &p->pet_id, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 28, SQLDT_INT,    &p->hom_id, 0, NULL, NULL)
-	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 29, SQLDT_INT,	&p->ele_id, 0, NULL, NULL)
+	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 29, SQLDT_INT,	&p->ele_id, 0, NULL, NULL)	   
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 30, SQLDT_SHORT,  &p->hair, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 31, SQLDT_SHORT,  &p->hair_color, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 32, SQLDT_SHORT,  &p->clothes_color, 0, NULL, NULL)
@@ -1025,7 +1025,7 @@ int mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 46, SQLDT_INT,    &p->mother, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 47, SQLDT_INT,    &p->child, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 48, SQLDT_INT,    &p->fame, 0, NULL, NULL)
-	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 49, SQLDT_SHORT,	&p->rename, 0, NULL, NULL)
+	||  SQL_ERROR == SqlStmt_BindColumn(stmt, 49, SQLDT_SHORT,	&p->rename, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 50, SQLDT_UINT32, &p->delete_date, 0, NULL, NULL)
 	||	SQL_ERROR == SqlStmt_BindColumn(stmt, 51, SQLDT_SHORT,  &p->robe, 0, NULL, NULL)
 	)
@@ -1330,13 +1330,12 @@ int check_char_name(char * name, char * esc_name)
 // Function to create a new character
 //-----------------------------------
 #if PACKETVER >= 20120307
-int make_new_char_sql(struct char_session_data* sd, char* name_, int slot, int hair_color, int hair_style)
-{
-	int str = 5, agi = 5, vit = 5, int_ = 5, dex = 5,luk = 5;
+int make_new_char_sql(struct char_session_data* sd, char* name_, int slot, int hair_color, int hair_style) {
+	int str = 1, agi = 1, vit = 1, int_ = 1, dex = 1, luk = 1;
 #else
-int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style)
-{
+int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style) {
 #endif
+
 	char name[NAME_LENGTH];
 	char esc_name[NAME_LENGTH*2+1];
 	int char_id, flag;
@@ -1381,18 +1380,31 @@ int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int ag
 			charlog_db, "make new char", sd->account_id, slot, esc_name, str, agi, vit, int_, dex, luk, hair_style, hair_color) )
 			Sql_ShowDebug(sql_handle);
 	}
-
+#if PACKETVER >= 20120307
 	//Insert the new char entry to the database
-	if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` (`account_id`, `char_num`, `name`, `zeny`, `str`, `agi`, `vit`, `int`, `dex`, `luk`, `max_hp`, `hp`,"
+	if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` (`account_id`, `char_num`, `name`, `zeny`, `status_point`,`str`, `agi`, `vit`, `int`, `dex`, `luk`, `max_hp`, `hp`,"
 		"`max_sp`, `sp`, `hair`, `hair_color`, `last_map`, `last_x`, `last_y`, `save_map`, `save_x`, `save_y`) VALUES ("
-		"'%d', '%d', '%s', '%d',  '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d','%d', '%d','%d', '%d', '%s', '%d', '%d', '%s', '%d', '%d')",
-		char_db, sd->account_id , slot, esc_name, start_zeny, str, agi, vit, int_, dex, luk,
+		"'%d', '%d', '%s', '%d',  '%d','%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d','%d', '%d','%d', '%d', '%s', '%d', '%d', '%s', '%d', '%d')",
+		char_db, sd->account_id , slot, esc_name, start_zeny, 48, str, agi, vit, int_, dex, luk,
 		(40 * (100 + vit)/100) , (40 * (100 + vit)/100 ),  (11 * (100 + int_)/100), (11 * (100 + int_)/100), hair_style, hair_color,
 		mapindex_id2name(start_point.map), start_point.x, start_point.y, mapindex_id2name(start_point.map), start_point.x, start_point.y) )
 	{
 		Sql_ShowDebug(sql_handle);
 		return -2; //No, stop the procedure!
 	}
+#else
+	//Insert the new char entry to the database
+	if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` (`account_id`, `char_num`, `name`, `zeny`, `str`, `agi`, `vit`, `int`, `dex`, `luk`, `max_hp`, `hp`,"
+							   "`max_sp`, `sp`, `hair`, `hair_color`, `last_map`, `last_x`, `last_y`, `save_map`, `save_x`, `save_y`) VALUES ("
+							   "'%d', '%d', '%s', '%d',  '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d','%d', '%d','%d', '%d', '%s', '%d', '%d', '%s', '%d', '%d')",
+							   char_db, sd->account_id , slot, esc_name, start_zeny, str, agi, vit, int_, dex, luk,
+							   (40 * (100 + vit)/100) , (40 * (100 + vit)/100 ),  (11 * (100 + int_)/100), (11 * (100 + int_)/100), hair_style, hair_color,
+							   mapindex_id2name(start_point.map), start_point.x, start_point.y, mapindex_id2name(start_point.map), start_point.x, start_point.y) )
+	{
+		Sql_ShowDebug(sql_handle);
+		return -2; //No, stop the procedure!
+	}	
+#endif
 	//Retrieve the newly auto-generated char id
 	char_id = (int)Sql_LastInsertId(sql_handle);
 	//Give the char the default items
@@ -2079,6 +2091,9 @@ int parse_fromlogin(int fd)
 							class_[i] = (sex ? JOB_KAGEROU : JOB_OBORO);
 					}
 
+					if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `class`='%d', `weapon`='0', `shield`='0', `head_top`='0', `head_mid`='0', `head_bottom`='0' WHERE `char_id`='%d'", char_db, class_[i], char_id[i]) ) 
+						Sql_ShowDebug(sql_handle); 
+					
 					if( guild_id[i] )// If there is a guild, update the guild_member data [Skotlex]
 						inter_guild_sex_changed(guild_id[i], acc, char_id[i], sex);
 				}
@@ -2272,7 +2287,7 @@ void char_read_fame_list(void)
 	memset(chemist_fame_list, 0, sizeof(chemist_fame_list));
 	memset(taekwon_fame_list, 0, sizeof(taekwon_fame_list));
 	// Build Blacksmith ranking list
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `char_id`,`fame`,`name` FROM `%s` WHERE `fame`>0 AND (`class`='%d' OR `class`='%d' OR `class`='%d') ORDER BY `fame` DESC LIMIT 0,%d", char_db, JOB_BLACKSMITH, JOB_WHITESMITH, JOB_BABY_BLACKSMITH, fame_list_size_smith) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `char_id`,`fame`,`name` FROM `%s` WHERE `fame`>0 AND (`class`='%d' OR `class`='%d' OR `class`='%d' OR `class`='%d' OR `class`='%d' OR `class`='%d') ORDER BY `fame` DESC LIMIT 0,%d", char_db, JOB_BLACKSMITH, JOB_WHITESMITH, JOB_BABY_BLACKSMITH, JOB_MECHANIC, JOB_MECHANIC_T, JOB_BABY_MECHANIC, fame_list_size_smith) )
 		Sql_ShowDebug(sql_handle);
 	for( i = 0; i < fame_list_size_smith && SQL_SUCCESS == Sql_NextRow(sql_handle); ++i )
 	{
@@ -2287,7 +2302,7 @@ void char_read_fame_list(void)
 		memcpy(smith_fame_list[i].name, data, min(len, NAME_LENGTH));
 	}
 	// Build Alchemist ranking list
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `char_id`,`fame`,`name` FROM `%s` WHERE `fame`>0 AND (`class`='%d' OR `class`='%d' OR `class`='%d') ORDER BY `fame` DESC LIMIT 0,%d", char_db, JOB_ALCHEMIST, JOB_CREATOR, JOB_BABY_ALCHEMIST, fame_list_size_chemist) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `char_id`,`fame`,`name` FROM `%s` WHERE `fame`>0 AND (`class`='%d' OR `class`='%d' OR `class`='%d' OR `class`='%d' OR `class`='%d' OR `class`='%d') ORDER BY `fame` DESC LIMIT 0,%d", char_db, JOB_ALCHEMIST, JOB_CREATOR, JOB_BABY_ALCHEMIST, JOB_GENETIC, JOB_GENETIC_T, JOB_BABY_GENETIC, fame_list_size_chemist) )
 		Sql_ShowDebug(sql_handle);
 	for( i = 0; i < fame_list_size_chemist && SQL_SUCCESS == Sql_NextRow(sql_handle); ++i )
 	{
@@ -3592,7 +3607,7 @@ int parse_char(int fd)
 			i = search_mapserver(cd->last_point.map, -1, -1);
 
 			// if map is not found, we check major cities
-			if (i < 0) {
+			if (i < 0 || !cd->last_point.map) {
 				unsigned short j;
 				//First check that there's actually a map server online.
 				ARR_FIND( 0, ARRAYLENGTH(server), j, server[j].fd >= 0 && server[j].map[0] );

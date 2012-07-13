@@ -742,8 +742,8 @@
 2033,0,6,4,0,0x1,0,5,1,no,0,0,0,none,0,		GC_CLOAKINGEXCEED,Cloaking Exceed
 2034,0,6,4,-1,0x2,3,1,1,no,0,0,0,weapon,0,	GC_PHANTOMMENACE,Phantom Menace
 2035,0,6,4,0,0x1,0,5,1,no,0,0,0,none,0,		GC_HALLUCINATIONWALK,Hallucination Walk
-2036,0,6,4,-1,0x2,1,5,1,no,0,0,0,weapon,0,	GC_ROLLINGCUTTER,Rolling Cutter
-2037,7,6,1,-1,0,0,5,1,no,0,0,0,weapon,0,	GC_CROSSRIPPERSLASHER,Cross Ripper Slasher
+2036,0,6,4,-1,0x2,1:1:1:1:2,5,1,no,0,0,0,weapon,0,	GC_ROLLINGCUTTER,Rolling Cutter
+2037,9:10:11:12:13,6,1,-1,0,0,5,1,no,0,0,0,weapon,0,	GC_CROSSRIPPERSLASHER,Cross Ripper Slasher
 
 //****
 // AB Arch Bishop
@@ -920,9 +920,9 @@
 // WM Wanderer/Minstrel
 2412,0,0,0,0,0,0,10,0,no,0,0,0,none,0,		WM_LESSON,Lesson
 2413,9,8,1,-1,0,0,5,-2:-2:-3:-3:-4,yes,0,0,0,magic,0,	WM_METALICSOUND,Metallic Sound
-2414,9,6,2,-1,0x3,1,5,1,yes,0,0x80,3,none,0,	WM_REVERBERATION,Reverberation //CHECK May need to recode. Testing needed.
-2415,0,6,1,-1,0x2,1,5,1,no,0,0,0,weapon,0,	WM_REVERBERATION_MELEE,Reverberation Melee
-2416,0,6,1,-1,0x2,1,5,1,no,0,0,0,magic,0,	WM_REVERBERATION_MAGIC,Reverberation Magic
+2414,9,6,2,-1,0x3,1,5,1,yes,0,0x80,3,none,0,	WM_REVERBERATION,Reverberation 
+2415,0,6,1,-1,0x6,1,5,1,no,0,0,0,weapon,0,	WM_REVERBERATION_MELEE,Reverberation Melee
+2416,0,6,1,0,0x6,1,5,1,no,0,0,0,magic,0,	WM_REVERBERATION_MAGIC,Reverberation Magic
 2417,11,6,2,0,0x3,5,1,1,no,0,0,0,none,0,	WM_DOMINION_IMPULSE,Dominion Impulse
 2418,9,6,2,-1,0x1,0,5,1,yes,0,0,0,none,0,	WM_SEVERE_RAINSTORM,Severe Rainstorm
 2419,9,6,2,0,0x3,1,5,1,yes,0,0x80,5,none,0,	WM_POEMOFNETHERWORLD,Poem of The Netherworld //CHECK May need to recode too.
@@ -991,7 +991,7 @@
 2488,9,6,2,0,0,0,1,1,no,0,0,0,none,0,		GN_FIRE_EXPANSION_TEAR_GAS,Fire Expansion Tear Gas
 2489,11,6,1,0,0,0,10,1:2:3:4:5:6:7:8:9:10,no,0,0,0,weapon,0,		GN_FIRE_EXPANSION_ACID,Fire Expansion Acid
 2490,9,6,2,0,0x3,1,5,1,yes,0,0x80,2:3:4:5:6,none,0,	GN_HELLS_PLANT,Hell's Plant
-2491,0,6,1,0,0x90,0,5,1,no,0,0,0,misc,0,	GN_HELLS_PLANT_ATK,Hell's Plant Attack
+2491,0,6,1,0,0xC0,0,5,1,no,0,0,0,misc,0,	GN_HELLS_PLANT_ATK,Hell's Plant Attack
 2492,0,6,4,0,0x3,6:7:8:9:10,5,1,yes,0,0,0,none,0,	GN_MANDRAGORA,Howling of Mandragora
 2493,11,6,16,0,0x1,0,1,1,yes,0,0,0,none,0,	GN_SLINGITEM,Sling Item
 2494,0,6,4,0,0x1,0,1,1,no,0,0,0,none,0,		GN_CHANGEMATERIAL,Change Material
@@ -1007,55 +1007,6 @@
 2536,0,0,4,0,0x1,0,1,0,no,0,0,0,none,0,	ALL_GUARDIAN_RECALL,Guardian's Recall
 //2537,9,6,16,0,0x1,0,2,1,yes,0,0,0,magic,0,	ALL_ODINS_POWER,Odin's Power
 
-// Kagerou/Oboro
-3001,0,6,4,0,0x1,0,1,1,no,0,0,0,none,0,		KO_YAMIKUMO,Dark Cloud
-3002,0,0,0,0,0,0,5,0,no,0,0,0,none,0,		KO_RIGHT,Right-Hand Training
-3003,0,0,0,0,0,0,5,0,no,0,0,0,none,0,		KO_LEFT,Left-Hand Training
-3004,3:4:5:6:7,8,1,-1,0,0,5,-2,no,0,0,0,weapon,0,	KO_JYUMONJIKIRI,Cross Slasher
-
-3005,2,6,1,-1,0,0,5,1,no,0,0,0,weapon,0,	KO_SETSUDAN,Spirit Breaker
-3006,7:8:9:10:11,6,1,0,0x2,1:1:2:2:3,5,1,no,0,0,0,weapon,0,	KO_BAKURETSU,Exploding Kunai// Need explosive kunai item ID number.
-3007,0,6,4,-1,0x2,4:4:4:4:5,5,1,no,0,0,0,weapon,0,		KO_HAPPOKUNAI,Spray Kunai
-
-3008,11,8,1,0,0,0,10,-10,no,0,0x40,0,misc,0,		KO_MUCHANAGE,Over Throw
-3009,9:10:11:12:13,8,2,-1,0,0,5,-5,no,0,0,0,weapon,0,		KO_HUUMARANKA,Launch Huuma Shuriken
-3010,7,6,2,0,0,0,5,1,no,0,0,0,none,0,		KO_MAKIBISHI,Makibishi// Skill Info says its ground placed, but I dont see any UNIT animations for this....yet.
-
-3011,0,6,1,0,0,0,5,1,no,0,0,0,none,0,		KO_MEIKYOUSISUI,Dummy11// Is a INF 4 skill, but set to 1 for animation testing. Status is the animation
-3012,0,6,4,0,0,0,5,1,no,0,0,0,none,0,		KO_ZANZOU,Dummy12// Creates a clone of yourself....kinda. Uses monster ID 2308
-3013,5,6,1,0,0,0,5,1,no,0,0,0,none,0,		KO_KYOUGAKU,Dummy13
-3014,5,6,1,0,0,0,5,1,no,0,0,0,none,0,		KO_JYUSATSU,Dummy14
-
-3015,1,6,1,0,0,0,1,1,no,0,0,0,none,0,		KO_KAHU_ENTEN,Dummy15// This and the following 3 skills all appear to have a UNIT ID.
-3016,1,6,1,0,0,0,1,1,no,0,0,0,none,0,		KO_HYOUHU_HUBUKI,Dummy16// So these should be INF 2, but will be set as 1 for animation testing.
-3017,1,6,1,0,0,0,1,1,no,0,0,0,none,0,		KO_KAZEHU_SEIRAN,Dummy17
-3018,1,6,1,0,0,0,1,1,no,0,0,0,none,0,		KO_DOHU_KOUKAI,Dummy18
-
-3019,11,6,1,0,0,0,1,1,no,0,0,0,none,0,		KO_KAIHOU,Dummy19
-3020,1,6,1,0,0,0,1,1,no,0,0,0,none,0,		KO_ZENKAI,Dummy20// No animation. Clear skill desc says Expand the spirits into the ground and create formations that does effects. Is that INF 2 or 4?
-
-3021,5:6:7:8:9,6,1,0,0,0,5,1,no,0,0,0,none,0,		KO_GENWAKU,Dummy21// Sounds like its enemy targeted. Cast animation only works on INF 1
-3022,0,6,1,0,0,0,5,1,no,0,0,0,none,0,		KO_IZAYOI,Dummy22// Sounds like a INF 4 skill, but animation only happens if enemy targeted. Bugged?
-
-// Kagerou
-3023,5:7:9:11:13,6,1,0,0,0,5,1,no,0,0,0,none,0,		KG_KAGEHUMI,Dummy23// Is a INF 4 skill, but is set to 1 for animation testing.
-3024,0,6,1,0,0,0,5,1,no,0,0,0,none,0,		KG_KYOMU,Dummy24// Skill desc makes it sound like its a INF 1 type and animation does work on 1.
-3025,0,6,1,0,0,0,5,1,no,0,0,0,none,0,		KG_KAGEMUSYA,Dummy25// Appears to be a INF 4 type, but animation only works on type 1, but requires holding shift.
-
-// Oboro
-3026,7,6,1,0,0,0,5,1,no,0,0,0,none,0,		OB_ZANGETSU,Dummy26// Desc says usable on allies and enemys, which is INF 16, but animation only works on 1 and holding shift.
-3027,7,6,1,0,0,0,5,1,no,0,0,0,none,0,		OB_OBOROGENSOU,Dummy27
-3028,1,6,4,0,0,0,5,1,no,0,0,0,none,0,		OB_OBOROGENSOU_TRANSITION_ATK,Dummy28
-3029,7,6,1,0,0,0,5,1,no,0,0,0,none,0,		OB_AKAITSUKI,Dummy29
-
-// Eclage Skills
-3031,7,6,16,0,0x1,0,1,1,no,0,0,0,none,0,	ECL_SNOWFLIP,Snow Flip
-3032,7,6,16,0,0x1,0,1,1,no,0,0,0,none,0,	ECL_PEONYMAMY,Peony Mamy
-3033,7,6,16,0,0x1,0,1,1,no,0,0,0,none,0,	ECL_SADAGUI,Sadagui
-3034,7,6,16,0,0x1,0,1,1,no,0,0,0,none,0,	ECL_SEQUOIADUST,Sequoia Dust
-3035,0,6,4,0,0x1,0,1,1,no,0,0,0,none,0,	ECLAGE_RECALL,Return To Eclage
-
-// Homunculus Skills
 8001,9,6,4,0,0x1,0,5,1,no,0,0,0,magic,0,	HLIF_HEAL,Healing Touch
 8002,0,6,4,0,0x3,-1,5,1,no,0,0,0,none,0,	HLIF_AVOID,Avoid
 8003,0,0,0,0,0,1,5,0,no,0,0,0,none,0,		HLIF_BRAIN,Brain Surgery
@@ -1159,7 +1110,6 @@
 8441,5,6,1,2,0,1,1,1,no,0,0,0,magic,0,		EL_ROCK_CRUSHER_ATK,Rock Launcher Attack
 8442,9,6,1,2,0,1,1,-5,no,0,0,0,weapon,0,	EL_STONE_RAIN,Stone Rain
 
-// Guild Skills
 10000,0,0,0,0,0,0,1,0,no,0,0x10,0,none,0,	GD_APPROVAL,Official Guild Approval
 10001,0,0,0,0,0,0,1,0,no,0,0x10,0,none,0,	GD_KAFRACONTRACT,Kafra Contract
 10002,0,0,0,0,0,0,1,0,no,0,0x10,0,none,0,	GD_GUARDRESEARCH,Guardian Research

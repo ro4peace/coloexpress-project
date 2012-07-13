@@ -32,7 +32,7 @@ struct party_booking_ad_info;
 enum
 {// packet DB
 	MAX_PACKET_DB  = 0xA00,
-	MAX_PACKET_VER = 28,
+	MAX_PACKET_VER = 30,
 	MAX_PACKET_POS = 20,
 };
 
@@ -730,6 +730,7 @@ int clif_autoshadowspell_list(struct map_session_data *sd);
 
 int clif_status_load_notick(struct block_list *bl,int type,int flag,int val1, int val2, int val3);
 int clif_status_load_single(int fd, int id,int type,int flag,int val1, int val2, int val3);
+
 
 int clif_skill_itemlistwindow( struct map_session_data *sd, int skill_id, int skill_lv );
 void clif_elemental_info(struct map_session_data *sd);

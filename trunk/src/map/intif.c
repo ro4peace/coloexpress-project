@@ -1995,10 +1995,10 @@ int intif_parse_mercenary_saved(int fd)
 int intif_elemental_create(struct s_elemental *ele)
 {
 	int size = sizeof(struct s_elemental) + 4;
-
+	
 	if( CheckForCharServer() )
 		return 0;
-
+	
 	WFIFOHEAD(inter_fd,size);
 	WFIFOW(inter_fd,0) = 0x307c;
 	WFIFOW(inter_fd,2) = size;
@@ -2016,7 +2016,7 @@ int intif_parse_elemental_received(int fd)
 			ShowError("intif: create elemental data size error %d != %d\n", sizeof(struct s_elemental), len);
 		return 0;
 	}
-
+	
 	elemental_data_received((struct s_elemental*)RFIFOP(fd,5), RFIFOB(fd,4));
 	return 0;
 }
@@ -2025,7 +2025,7 @@ int intif_elemental_request(int ele_id, int char_id)
 {
 	if (CheckForCharServer())
 		return 0;
-
+	
 	WFIFOHEAD(inter_fd,10);
 	WFIFOW(inter_fd,0) = 0x307d;
 	WFIFOL(inter_fd,2) = ele_id;
@@ -2038,7 +2038,7 @@ int intif_elemental_delete(int ele_id)
 {
 	if (CheckForCharServer())
 		return 0;
-
+	
 	WFIFOHEAD(inter_fd,6);
 	WFIFOW(inter_fd,0) = 0x307e;
 	WFIFOL(inter_fd,2) = ele_id;
@@ -2050,17 +2050,17 @@ int intif_parse_elemental_deleted(int fd)
 {
 	if( RFIFOB(fd,2) != 1 )
 		ShowError("Elemental data delete failure\n");
-
+	
 	return 0;
 }
 
 int intif_elemental_save(struct s_elemental *ele)
 {
 	int size = sizeof(struct s_elemental) + 4;
-
+	
 	if( CheckForCharServer() )
 		return 0;
-
+	
 	WFIFOHEAD(inter_fd,size);
 	WFIFOW(inter_fd,0) = 0x307f;
 	WFIFOW(inter_fd,2) = size;
@@ -2073,7 +2073,7 @@ int intif_parse_elemental_saved(int fd)
 {
 	if( RFIFOB(fd,2) != 1 )
 		ShowError("Elemental data save failure\n");
-
+	
 	return 0;
 }
 
@@ -2081,20 +2081,20 @@ void intif_request_accinfo( int u_fd, int aid, int group_id, char* query ) {
 
 
 	WFIFOHEAD(inter_fd,2 + 4 + 4 + 4 + NAME_LENGTH);
-
+	
 	WFIFOW(inter_fd,0) = 0x3007;
 	WFIFOL(inter_fd,2) = u_fd;
 	WFIFOL(inter_fd,6) = aid;
 	WFIFOL(inter_fd,10) = group_id;
 	safestrncpy(WFIFOP(inter_fd,14), query, NAME_LENGTH);
-
+	
 	WFIFOSET(inter_fd,2 + 4 + 4 + 4 + NAME_LENGTH);
-
+	
 	return;
 }
-
+	
 void intif_parse_MessageToFD(int fd) {
-	int u_fd = RFIFOL(fd,2);
+	int u_fd = RFIFOL(fd,2);	
 
 	if( session[u_fd] && session[u_fd]->session_data ) {
 		int aid = RFIFOL(fd,6);
@@ -2105,9 +2105,9 @@ void intif_parse_MessageToFD(int fd) {
 			safestrncpy(msg, (char*)RFIFOP(fd,10), 512);
 			clif_displaymessage(u_fd,msg);
 		}
-
+	
 	}
-
+	
 	return;
 }
 
@@ -2204,7 +2204,7 @@ int intif_parse(int fd)
 	case 0x387c:	intif_parse_elemental_received(fd); break;
 	case 0x387d:	intif_parse_elemental_deleted(fd); break;
 	case 0x387e:	intif_parse_elemental_saved(fd); break;
-
+			
 	case 0x3880:	intif_parse_CreatePet(fd); break;
 	case 0x3881:	intif_parse_RecvPetData(fd); break;
 	case 0x3882:	intif_parse_SavePetOk(fd); break;
