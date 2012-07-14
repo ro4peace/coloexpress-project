@@ -1,5 +1,11 @@
 Date	Added
 
+2012/07/14
+	* More optimization of 13.1 quests (quests\quests_13_1.txt)
+	* Missed deleting another line.
+	* Fixed updated SR_SKYNETBLOW behavior to official and damage formula and other Sura skills(SR_TIGERCANNON,SR_FALLENEMPIRE,SR_GATEOFHELL,SR_WINDMILL,SR_RIDEINLIGHTING,SR_LIGHTNINGWALK) and more to come...:D
+	* Fixed where PF_SPIDERWEB is not working/compatible with item autospell.
+	* Fixed where you can make unlimited stones with SO_EL_ANALYSIS.
 2012/07/12
 	* Fixed my mistake.
 	* Fixed Warp Portal will cease to function after warping first user if its target is the same point where it was casted.
