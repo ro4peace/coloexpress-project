@@ -1,5 +1,22 @@
 Date	Added
 
+2012/07/17
+	* Added a Super Novice Expansion quest with custom dialogue. Will be updated once we get the official script.
+	* Fixed a couple of typos and other mistakes.
+	* Moved all the RE entries in the .conf files behind the pre-RE entries.
+	* Re-added a missing .conf entry.
+	* Edited "WoE Time Explanation" documentation (doc\woe_time_explanation.txt)
+	* Added Warg documentation to checkoption/setoption.
+	* Fixed double decrement with unit_remove_map and the issue that causes dynamic mobs to not spawn when one player is on the map.
+	* Disabled and removed all renewal-only scripts from pre-re folder. You still can enable them in pre-renewal scripts conf files, but scripts are read from the re folder.
+	* Splitted some renewal-only NPCs from renters.txt into another file.
+	* Fixed traps should now hit/damage all targets inside gvg/pvp grounds.
+	* Update for Sura skills to its official behavior and damage formula(SR_EARTHSHAKER,SR_RAMPAGEBLASTER,SR_KNUCKLEARROW,SR_GENTLETOUCH_QUITE,SR_GENTLETOUCH_CHANGE,SR_GENTLETOUCH_REVITALIZE.
+	* Added new script command hommutate which changes an Homunculus into an Homunculus S Class.
+	* Added 2 new configs to homunc.conf to set the Max. Level for Homunculus and homunculus.
+	* Updated homun_exp.txt table with values from Lvl. 99 to 150 for Homnunculus S.
+	* Updated script_commands.txt with description of the new script command.
+	* Added Homunculus S Quest.
 2012/07/14
 	* More optimization of 13.1 quests (quests\quests_13_1.txt)
 	* Missed deleting another line.
