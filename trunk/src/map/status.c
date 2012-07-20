@@ -641,8 +641,8 @@ void initChangeTables(void) {
 	set_sc( MI_ECHOSONG               , SC_ECHOSONG             , SI_ECHOSONG             , SCB_DEF2  );
 	set_sc( MI_HARMONIZE              , SC_HARMONIZE            , SI_HARMONIZE            , SCB_STR|SCB_AGI|SCB_VIT|SCB_INT|SCB_DEX|SCB_LUK );
 	set_sc_with_vfx( WM_POEMOFNETHERWORLD      , SC_NETHERWORLD          , SI_NETHERWORLD          , SCB_NONE );
-	set_sc( WM_VOICEOFSIREN           , SC_VOICEOFSIREN         , SI_VOICEOFSIREN         , SCB_NONE );
-	set_sc( WM_LULLABY_DEEPSLEEP      , SC_DEEPSLEEP            , SI_DEEPSLEEP            , SCB_NONE );
+	set_sc_with_vfx( WM_VOICEOFSIREN           , SC_VOICEOFSIREN         , SI_VOICEOFSIREN         , SCB_NONE );
+	set_sc_with_vfx( WM_LULLABY_DEEPSLEEP      , SC_DEEPSLEEP            , SI_DEEPSLEEP            , SCB_NONE );
 	set_sc( WM_SIRCLEOFNATURE         , SC_SIRCLEOFNATURE       , SI_SIRCLEOFNATURE       , SCB_NONE );
 	set_sc( WM_GLOOMYDAY              , SC_GLOOMYDAY            , SI_GLOOMYDAY            , SCB_FLEE|SCB_ASPD );
 	set_sc( WM_SONG_OF_MANA           , SC_SONGOFMANA           , SI_SONGOFMANA           , SCB_NONE );
@@ -894,6 +894,8 @@ void initChangeTables(void) {
 	StatusChangeFlagTable[SC_INCFLEE2] |= SCB_FLEE2;
 	StatusChangeFlagTable[SC_INCMHPRATE] |= SCB_MAXHP;
 	StatusChangeFlagTable[SC_INCMSPRATE] |= SCB_MAXSP;
+	StatusChangeFlagTable[SC_INCMHP] |= SCB_MAXHP;
+	StatusChangeFlagTable[SC_INCMSP] |= SCB_MAXSP;
 	StatusChangeFlagTable[SC_INCATKRATE] |= SCB_BATK|SCB_WATK;
 	StatusChangeFlagTable[SC_INCMATKRATE] |= SCB_MATK;
 	StatusChangeFlagTable[SC_INCDEFRATE] |= SCB_DEF;
@@ -1679,7 +1681,8 @@ int status_check_skilluse(struct block_list *src, struct block_list *target, int
 				if (pc_isinvisible(sd))
 					return 0;
 				if (tsc->option&hide_flag && !is_boss &&
-					(sd->special_state.perfect_hiding || !is_detect) )
+					((sd->special_state.perfect_hiding || !is_detect) ||
+					(tsc->data[SC_CLOAKINGEXCEED] && is_detect)))
 					return 0;
 				if( tsc->data[SC_CAMOUFLAGE] && !(is_boss || is_detect) && !skill_num )
 					return 0;
@@ -5307,6 +5310,8 @@ static unsigned int status_calc_maxhp(struct block_list *bl, struct status_chang
 
 	if(sc->data[SC_INCMHPRATE])
 		maxhp += maxhp * sc->data[SC_INCMHPRATE]->val1/100;
+	if(sc->data[SC_INCMHP])
+		maxhp += (sc->data[SC_INCMHP]->val1);
 	if(sc->data[SC_APPLEIDUN])
 		maxhp += maxhp * sc->data[SC_APPLEIDUN]->val2/100;
 	if(sc->data[SC_DELUGE])
@@ -5358,6 +5363,8 @@ static unsigned int status_calc_maxsp(struct block_list *bl, struct status_chang
 
 	if(sc->data[SC_INCMSPRATE])
 		maxsp += maxsp * sc->data[SC_INCMSPRATE]->val1/100;
+	if(sc->data[SC_INCMSP])
+		maxsp += (sc->data[SC_INCMSP]->val1);
 	if(sc->data[SC_SERVICE4U])
 		maxsp += maxsp * sc->data[SC_SERVICE4U]->val2/100;
 	if(sc->data[SC_MERC_SPUP])
