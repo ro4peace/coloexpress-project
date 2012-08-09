@@ -619,7 +619,23 @@ typedef enum sc_type {
 	SC_ERASER_CUTTER,
 	/* Max HP & SP */
 	SC_INCMHP,
-	SC_INCMSP,	
+	SC_INCMSP,
+	SC_PARTYFLEE, // 531
+	/**
+	* Kagerou & Oboro [malufett]
+	**/
+	SC_MEIKYOUSISUI,
+	SC_JYUMONJIKIRI,
+	SC_KYOUGAKU,
+	SC_IZAYOI,
+	SC_ZENKAI,
+	SC_KAGEHUMI,
+	SC_KYOMU,
+	SC_KAGEMUSYA,
+	SC_ZANGETSU,
+	SC_GENSOU,
+	SC_AKAITSUKI,
+
 	SC_MAX, //Automatically updated max, used in for's to check we are within bounds.
 } sc_type;
 
@@ -939,7 +955,7 @@ enum si_type {
 //	SI_REUSE_LIMIT_F = 310,
 	SI_INVINCIBLE = 311,
 	SI_CASH_PLUSONLYJOBEXP = 312,
-//	SI_PARTYFLEE = 313,
+	SI_PARTYFLEE = 313,
 //	SI_ANGEL_PROTECT = 314,
 	SI_ENDURE_MDEF = 315,
 	SI_ENCHANTBLADE = 316,
@@ -1525,7 +1541,7 @@ struct status_data {
 #endif
 		aspd_rate;
 	/**
-	 * defType is REMODE dependent and defined in src/map/config/data/const.h
+	 * defType is RENEWAL dependent and defined in src/map/config/data/const.h
 	 **/
 	defType def,mdef;
 

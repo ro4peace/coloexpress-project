@@ -518,9 +518,9 @@ int pc_makesavestatus(struct map_session_data *sd)
   	//Only copy the Cart/Peco/Falcon options, the rest are handled via 
 	//status change load/saving. [Skotlex]
 #ifdef NEW_CARTS
-	sd->status.option = sd->sc.option&(OPTION_FALCON|OPTION_RIDING|OPTION_DRAGON|OPTION_WUG|OPTION_MADOGEAR|OPTION_MOUNTING);
+	sd->status.option = sd->sc.option&(OPTION_FALCON|OPTION_RIDING|OPTION_DRAGON|OPTION_WUG|OPTION_WUGRIDER|OPTION_MADOGEAR|OPTION_MOUNTING);
 #else
-	sd->status.option = sd->sc.option&(OPTION_CART|OPTION_FALCON|OPTION_RIDING|OPTION_DRAGON|OPTION_WUG|OPTION_MADOGEAR|OPTION_MOUNTING);
+	sd->status.option = sd->sc.option&(OPTION_CART|OPTION_FALCON|OPTION_RIDING|OPTION_DRAGON|OPTION_WUG|OPTION_WUGRIDER|OPTION_MADOGEAR|OPTION_MOUNTING);
 #endif
 	if (sd->sc.data[SC_JAILED])
 	{	//When Jailed, do not move last point.
@@ -878,6 +878,8 @@ int pc_isequip(struct map_session_data *sd,int n)
 			return 0;
 		if(item->equip & EQP_ACC && sd->sc.data[SC__STRIPACCESSORY])
 			return 0;
+		if(item->equip && sd->sc.data[SC_KYOUGAKU])
+			return 0;
 
 		if (sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_SUPERNOVICE) {
 			//Spirit of Super Novice equip bonuses. [Skotlex]
@@ -1220,6 +1222,8 @@ int pc_reg_received(struct map_session_data *sd)
 	map_delnickdb(sd->status.char_id, sd->status.name);
 	if (!chrif_auth_finished(sd))
 		ShowError("pc_reg_received: Failed to properly remove player %d:%d from logging db!\n", sd->status.account_id, sd->status.char_id);
+	
+	pc_load_combo(sd);
 
 	status_calc_pc(sd,1);
 	chrif_scdata_request(sd->status.account_id, sd->status.char_id);
@@ -3810,7 +3814,7 @@ int pc_delitem(struct map_session_data *sd,int n,int amount,int type, short reas
 
 	sd->status.inventory[n].amount -= amount;
 	sd->weight -= sd->inventory_data[n]->weight*amount ;
-	if(sd->status.inventory[n].amount<=0){
+	if( sd->status.inventory[n].amount <= 0 ){
 		if(sd->status.inventory[n].equip)
 			pc_unequipitem(sd,n,3);
 		memset(&sd->status.inventory[n],0,sizeof(sd->status.inventory[0]));
@@ -3977,7 +3981,7 @@ int pc_isUseitem(struct map_session_data *sd,int n)
 		case 14591: // Siege Teleport Scroll
 			if( sd->duel_group && !battle_config.duel_allow_teleport )
 			{
-				clif_displaymessage(sd->fd, "Duel: Can't use this item in duel.");
+				clif_displaymessage(sd->fd, msg_txt(663));
 				return 0;
 			}
 			if( nameid != 601 && nameid != 12212 && map[sd->bl.m].flag.noreturn )
@@ -4116,6 +4120,7 @@ int pc_useitem(struct map_session_data *sd,int n)
 		sd->sc.data[SC_TRICKDEAD] ||
 		sd->sc.data[SC_HIDING] ||
 		sd->sc.data[SC__SHADOWFORM] ||
+		sd->sc.data[SC_KAGEHUMI] ||
 		(sd->sc.data[SC_NOCHAT] && sd->sc.data[SC_NOCHAT]->val1&MANNER_NOITEM)
 	))
 		return 0;
@@ -4265,6 +4270,7 @@ int pc_cart_additem(struct map_session_data *sd,struct item *item_data,int amoun
 		sd->cart_num++;
 		clif_cart_additem(sd,i,amount,0);
 	}
+	sd->status.cart[i].favorite = 0;/* clear */
 	log_pick_pc(sd, log_type, amount, &sd->status.cart[i]);
 	
 	sd->cart_weight += w;
@@ -4316,7 +4322,7 @@ int pc_putitemtocart(struct map_session_data *sd,int idx,int amount)
 
 	if( item_data->nameid == 0 || amount < 1 || item_data->amount < amount || sd->state.vending )
 		return 1;
-
+	
 	if( pc_cart_additem(sd,item_data,amount,LOG_TYPE_NONE) == 0 )
 		return pc_delitem(sd,idx,amount,0,5,LOG_TYPE_NONE);
 
@@ -4789,7 +4795,8 @@ int pc_checkallowskill(struct map_session_data *sd)
 		SC_ADRENALINE,
 		SC_ADRENALINE2,
 		SC_DANCING,
-		SC_GATLINGFEVER
+		SC_GATLINGFEVER,
+		SC_FEARBREEZE
 	};
 	const enum sc_type scs_list[] = {
 		SC_AUTOGUARD,
@@ -6378,6 +6385,9 @@ int pc_dead(struct map_session_data *sd,struct block_list *src)
 	if ( sd && sd->spiritball )
 		pc_delspiritball(sd,sd->spiritball,0);
 
+	for(i = 1; i < 5; i++)
+		pc_del_talisman(sd, sd->talisman[i], i);
+
 	if (src)
 	switch (src->type) {
 	case BL_MOB:
@@ -7858,12 +7868,159 @@ int pc_cleareventtimer(struct map_session_data *sd)
 		}
 	return 0;
 }
+/* called when a item with combo is worn */
+int pc_checkcombo(struct map_session_data *sd, struct item_data *data ) {
+	int i, j, k, z;
+	int index, idx, success = 0;
 
-//
-// ? ”õ•¨
-//
+	for( i = 0; i < data->combos_count; i++ ) {
+		
+		/* ensure this isn't a duplicate combo */
+		if( sd->combos.bonus != NULL ) {
+			int x;
+			ARR_FIND( 0, sd->combos.count, x, sd->combos.id[x] == data->combos[i]->id );
+
+			/* found a match, skip this combo */
+			if( x < sd->combos.count )
+				continue;
+		}
+		
+		for( j = 0; j < data->combos[i]->count; j++ ) {
+			int id = data->combos[i]->nameid[j];
+			bool found = false;
+			
+			for( k = 0; k < EQI_MAX; k++ ) {
+				index = sd->equip_index[k];
+				if( index < 0 ) continue;
+				if( k == EQI_HAND_R   &&  sd->equip_index[EQI_HAND_L] == index ) continue;
+				if( k == EQI_HEAD_MID &&  sd->equip_index[EQI_HEAD_LOW] == index ) continue;
+				if( k == EQI_HEAD_TOP && (sd->equip_index[EQI_HEAD_MID] == index || sd->equip_index[EQI_HEAD_LOW] == index) ) continue;
+				
+				if(!sd->inventory_data[index])
+					continue;
+				
+				if ( itemdb_type(id) != IT_CARD ) {
+					if ( sd->inventory_data[index]->nameid != id )
+						continue;
+
+					found = true;
+					break;
+				} else { //Cards
+					if ( sd->inventory_data[index]->slot == 0 || itemdb_isspecial(sd->status.inventory[index].card[0]) )
+						continue;
+					
+					for (z = 0; z < sd->inventory_data[index]->slot; z++) {
+
+						if (sd->status.inventory[index].card[z] != id)
+							continue;
+												
+						// We have found a match
+						found = true;
+						break;
+					}
+				}
+
+			}
+
+			if( !found )
+				break;/* we haven't found all the ids for this combo, so we can return */
+		}
+		
+		/* means we broke out of the count loop w/o finding all ids, we can move to the next combo */
+		if( j < data->combos[i]->count )
+			continue;
+		
+		/* we got here, means all items in the combo are matching */
+		
+		idx = sd->combos.count;
+		
+		if( sd->combos.bonus == NULL ) {
+			CREATE(sd->combos.bonus, struct script_code *, 1);
+			CREATE(sd->combos.id, unsigned short, 1);
+			sd->combos.count = 1;
+		} else {
+			RECREATE(sd->combos.bonus, struct script_code *, ++sd->combos.count);
+			RECREATE(sd->combos.id, unsigned short, sd->combos.count);
+		}
+				
+		/* we simply copy the pointer */
+		sd->combos.bonus[idx] = data->combos[i]->script;
+		/* save this combo's id */
+		sd->combos.id[idx] = data->combos[i]->id;
+		
+		success++;
+	}
+	return success;
+}
+
+/* called when a item with combo is removed */
+int pc_removecombo(struct map_session_data *sd, struct item_data *data ) {
+	int i, retval = 0;
+	
+	if( sd->combos.bonus == NULL )
+		return 0;/* nothing to do here, player has no combos */
+	for( i = 0; i < data->combos_count; i++ ) {
+		/* check if this combo exists in this user */
+		int x = 0, cursor = 0, j;
+		ARR_FIND( 0, sd->combos.count, x, sd->combos.id[x] == data->combos[i]->id );
+		/* no match, skip this combo */
+		if( !(x < sd->combos.count) )
+			continue;
+
+		sd->combos.bonus[x] = NULL;
+		sd->combos.id[x] = 0;
+		retval++;
+		for( j = 0, cursor = 0; j < sd->combos.count; j++ ) {
+			if( sd->combos.bonus[j] == NULL )
+				continue;
+			
+			if( cursor != j ) {
+				sd->combos.bonus[cursor] = sd->combos.bonus[j];
+				sd->combos.id[cursor]    = sd->combos.id[j];
+			}
+			
+			cursor++;
+		}
+
+		/* it's empty, we can clear all the memory */
+		if( (sd->combos.count = cursor) == 0 ) {
+			aFree(sd->combos.bonus);
+			aFree(sd->combos.id);
+			sd->combos.bonus = NULL;
+			sd->combos.id = NULL;
+			return retval; /* we also can return at this point for we have no more combos to check */
+		}
+
+	}
+	
+	return retval;
+}
+int pc_load_combo(struct map_session_data *sd) {
+	int i, ret = 0;
+	for( i = 0; i < EQI_MAX; i++ ) {
+		struct item_data *id = NULL;
+		int idx = sd->equip_index[i];
+		if( sd->equip_index[i] < 0 || !(id = sd->inventory_data[idx] ) )
+			continue;
+		if( id->combos_count )
+			ret += pc_checkcombo(sd,id);
+		if(!itemdb_isspecial(sd->status.inventory[idx].card[0])) {
+			struct item_data *data;
+			int j;
+			for( j = 0; j < id->slot; j++ ) {
+				if (!sd->status.inventory[idx].card[j])
+					continue;
+				if ( ( data = itemdb_exists(sd->status.inventory[idx].card[j]) ) != NULL ) {
+					if( data->combos_count )
+						ret += pc_checkcombo(sd,data);
+				}
+			}
+		}
+	}
+	return ret;
+}
 /*==========================================
- * ƒAƒCƒeƒ€‚ð?”õ‚·‚é
+ * Attempt to equip item in inventory index 'n' in the EQP_ 'req_pos'
  *------------------------------------------*/
 int pc_equipitem(struct map_session_data *sd,int n,int req_pos)
 {
@@ -8018,15 +8175,32 @@ int pc_equipitem(struct map_session_data *sd,int n,int req_pos)
 	}
 
 	pc_checkallowskill(sd); //Check if status changes should be halted.
-
-
+	
+	/* check for combos (MUST be before status_calc_pc) */
+	if ( id ) {
+		struct item_data *data;
+		if( id->combos_count )
+			pc_checkcombo(sd,id);
+		if(itemdb_isspecial(sd->status.inventory[n].card[0]))
+			; //No cards
+		else {
+			for( i = 0; i < id->slot; i++ ) {
+				if (!sd->status.inventory[n].card[i])
+					continue;
+				if ( ( data = itemdb_exists(sd->status.inventory[n].card[i]) ) != NULL ) {
+					if( data->combos_count )
+						pc_checkcombo(sd,data);
+				}
+			}
+		}
+	}
+		
 	status_calc_pc(sd,0);
 	if (flag) //Update skill data
 		clif_skillinfoblock(sd);
 
 	//OnEquip script [Skotlex]
 	if (id) {
-		int i;
 		struct item_data *data;
 		if (id->equip_script)
 			run_script(id->equip_script,0,sd->bl.id,fake_nd->bl.id);
@@ -8053,9 +8227,9 @@ int pc_equipitem(struct map_session_data *sd,int n,int req_pos)
  * 1 - calculate status after unequipping
  * 2 - force unequip
  *------------------------------------------*/
-int pc_unequipitem(struct map_session_data *sd,int n,int flag)
-{
+int pc_unequipitem(struct map_session_data *sd,int n,int flag) {
 	int i;
+	bool status_cacl = false;
 	nullpo_ret(sd);
 
 	if( n < 0 || n >= MAX_INVENTORY ) {
@@ -8065,6 +8239,12 @@ int pc_unequipitem(struct map_session_data *sd,int n,int flag)
 
 	// if player is berserk then cannot unequip
 	if( !(flag&2) && sd->sc.count && sd->sc.data[SC_BERSERK] )
+	{
+		clif_unequipitemack(sd,n,0,0);
+		return 0;
+	}
+
+	if( !(flag&2) && sd->sc.count && sd->sc.data[SC_KYOUGAKU] )
 	{
 		clif_unequipitemack(sd,n,0,0);
 		return 0;
@@ -8148,7 +8328,30 @@ int pc_unequipitem(struct map_session_data *sd,int n,int flag)
 
 	sd->status.inventory[n].equip=0;
 
-	if(flag&1) {
+	/* check for combos (MUST be before status_calc_pc) */
+	if ( sd->inventory_data[n] ) {
+		struct item_data *data;
+		
+		if( sd->inventory_data[n]->combos_count ) {
+			if( pc_removecombo(sd,sd->inventory_data[n]) )
+				status_cacl = true;
+		} if(itemdb_isspecial(sd->status.inventory[n].card[0]))
+			; //No cards
+		else {
+			for( i = 0; i < sd->inventory_data[n]->slot; i++ ) {
+				if (!sd->status.inventory[n].card[i])
+					continue;
+				if ( ( data = itemdb_exists(sd->status.inventory[n].card[i]) ) != NULL ) {
+					if( data->combos_count ) {
+						if( pc_removecombo(sd,data) )
+							status_cacl = true;
+					}
+				}
+			}
+		}
+	}
+	
+	if(flag&1 || status_cacl) {
 		pc_checkallowskill(sd);
 		status_calc_pc(sd,0);
 	}
@@ -8658,6 +8861,106 @@ bool pc_should_log_commands(struct map_session_data *sd)
 	return pc_group_should_log_commands(pc_get_group_id(sd));
 }
 
+static int pc_talisman_timer(int tid, unsigned int tick, int id, intptr_t data)
+{
+	struct map_session_data *sd;
+	int i, type;
+
+	if( (sd=(struct map_session_data *)map_id2sd(id)) == NULL || sd->bl.type!=BL_PC )
+		return 1;
+
+	ARR_FIND(1, 5, type, sd->talisman[type] > 0);
+
+	if( sd->talisman[type] <= 0 )
+	{
+		ShowError("pc_talisman_timer: %d talisman's available. (aid=%d cid=%d tid=%d)\n", sd->talisman[type], sd->status.account_id, sd->status.char_id, tid);
+		sd->talisman[type] = 0;
+		return 0;
+	}
+
+	ARR_FIND(0, sd->talisman[type], i, sd->talisman_timer[type][i] == tid);
+	if( i == sd->talisman[type] )
+	{
+		ShowError("pc_talisman_timer: timer not found (aid=%d cid=%d tid=%d)\n", sd->status.account_id, sd->status.char_id, tid);
+		return 0;
+	}
+
+	sd->talisman[type]--;
+	if( i != sd->talisman[type] )
+		memmove(sd->talisman_timer[type]+i, sd->talisman_timer[type]+i+1, (sd->talisman[type]-i)*sizeof(int));
+	sd->talisman_timer[type][sd->talisman[type]] = INVALID_TIMER;
+
+	clif_talisman(sd, type);
+
+	return 0;
+}
+
+int pc_add_talisman(struct map_session_data *sd,int interval,int max,int type)
+{
+	int tid, i;
+
+	nullpo_ret(sd);
+
+	if(max > 10)
+		max = 10;
+	if(sd->talisman[type] < 0)
+		sd->talisman[type] = 0;
+
+	if( sd->talisman[type] && sd->talisman[type] >= max )
+	{
+		if(sd->talisman_timer[type][0] != INVALID_TIMER)
+			delete_timer(sd->talisman_timer[type][0],pc_talisman_timer);
+		sd->talisman[type]--;
+		if( sd->talisman[type] != 0 )
+			memmove(sd->talisman_timer[type]+0, sd->talisman_timer[type]+1, (sd->talisman[type])*sizeof(int));
+		sd->talisman_timer[type][sd->talisman[type]] = INVALID_TIMER;
+	}
+
+	tid = add_timer(gettick()+interval, pc_talisman_timer, sd->bl.id, 0);
+	ARR_FIND(0, sd->talisman[type], i, sd->talisman_timer[type][i] == INVALID_TIMER || DIFF_TICK(get_timer(tid)->tick, get_timer(sd->talisman_timer[type][i])->tick) < 0);
+	if( i != sd->talisman[type] )
+		memmove(sd->talisman_timer[type]+i+1, sd->talisman_timer[type]+i, (sd->talisman[type]-i)*sizeof(int));
+	sd->talisman_timer[type][i] = tid;
+	sd->talisman[type]++;
+
+	clif_talisman(sd, type);
+	return 0;
+}
+
+int pc_del_talisman(struct map_session_data *sd,int count,int type)
+{
+	int i;
+
+	nullpo_ret(sd);
+
+	if( sd->talisman[type] <= 0 ) {
+		sd->talisman[type] = 0;
+		return 0;
+	}
+
+	if( count <= 0 )
+		return 0;
+	if( count > sd->talisman[type] )
+		count = sd->talisman[type];
+	sd->talisman[type] -= count;
+	if( count > 10 )
+		count = 10;
+
+	for(i = 0; i < count; i++) {
+		if(sd->talisman_timer[type][i] != INVALID_TIMER) {
+			delete_timer(sd->talisman_timer[type][i],pc_talisman_timer);
+			sd->talisman_timer[type][i] = INVALID_TIMER;
+		}
+	}
+	for(i = count; i < 10; i++) {
+		sd->talisman_timer[type][i-count] = sd->talisman_timer[type][i];
+		sd->talisman_timer[type][i] = INVALID_TIMER;
+	}
+
+	clif_talisman(sd, type);
+	return 0;
+}
+
 int pc_split_str(char *str,char **val,int num)
 {
 	int i;
@@ -9074,6 +9377,7 @@ int do_init_pc(void) {
 	add_timer_func_list(pc_spiritball_timer, "pc_spiritball_timer");
 	add_timer_func_list(pc_follow_timer, "pc_follow_timer");
 	add_timer_func_list(pc_endautobonus, "pc_endautobonus");
+	add_timer_func_list(pc_talisman_timer, "pc_talisman_timer");
 
 	add_timer(gettick() + autosave_interval, pc_autosave, 0, 0);
 

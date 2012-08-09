@@ -57,6 +57,8 @@
 typedef struct AtCommandInfo AtCommandInfo;
 typedef struct AliasInfo AliasInfo;
 
+int atcmd_binding_count = 0;
+
 struct AtCommandInfo {
 	char command[ATCOMMAND_LENGTH]; 
 	AtCommandFunc func;
@@ -86,14 +88,15 @@ static const char* atcommand_checkalias(const char *aliasname); // @help
 static void atcommand_get_suggestions(struct map_session_data* sd, const char *name, bool atcommand); // @help
 
 // @commands (script-based)
-struct Atcmd_Binding* get_atcommandbind_byname(const char* name)
-{
+struct atcmd_binding_data* get_atcommandbind_byname(const char* name) {
 	int i = 0;
+	
 	if( *name == atcommand_symbol || *name == charcommand_symbol )
 		name++; // for backwards compatibility
-	ARR_FIND( 0, ARRAYLENGTH(atcmd_binding), i, strcmp(atcmd_binding[i].command, name) == 0 );
-	return ( i < ARRAYLENGTH(atcmd_binding) ) ? &atcmd_binding[i] : NULL;
-	return NULL;
+	
+	ARR_FIND( 0, atcmd_binding_count, i, strcmp(atcmd_binding[i]->command, name) == 0 );
+	
+	return ( i < atcmd_binding_count ) ? atcmd_binding[i] : NULL;
 }
 
 //-----------------------------------------------------------
@@ -549,7 +552,7 @@ ACMD_FUNC(jumpto)
 
 	if( pc_isdead(sd) )
 	{
-		clif_displaymessage(fd, "You cannot use this command when dead.");
+		clif_displaymessage(fd, msg_txt(664));
 		return -1;
 	}
 
@@ -580,7 +583,7 @@ ACMD_FUNC(jump)
 
 	if( pc_isdead(sd) )
 	{
-		clif_displaymessage(fd, "You cannot use this command when dead.");
+		clif_displaymessage(fd, msg_txt(664));
 		return -1;
 	}
 
@@ -1277,7 +1280,7 @@ ACMD_FUNC(alive)
 	nullpo_retr(-1, sd);
 	if (!status_revive(&sd->bl, 100, 100))
 	{
-		clif_displaymessage(fd, "You're not dead.");
+		clif_displaymessage(fd, msg_txt(667));
 		return -1;
 	}
 	clif_skill_nodamage(&sd->bl,&sd->bl,ALL_RESURRECTION,4,1);
@@ -1964,7 +1967,11 @@ ACMD_FUNC(go)
 		{ MAP_GEFFEN,      119,  59 }, //  2=Geffen
 		{ MAP_PAYON,       162, 233 }, //  3=Payon
 		{ MAP_ALBERTA,     192, 147 }, //  4=Alberta
+#ifdef RENEWAL
+		{ MAP_IZLUDE,      128, 146 }, //  5=Izlude (Renewal)
+#else
 		{ MAP_IZLUDE,      128, 114 }, //  5=Izlude
+#endif
 		{ MAP_ALDEBARAN,   140, 131 }, //  6=Al de Baran
 		{ MAP_LUTIE,       147, 134 }, //  7=Lutie
 		{ MAP_COMODO,      209, 143 }, //  8=Comodo
@@ -1985,16 +1992,16 @@ ACMD_FUNC(go)
 		{ MAP_RACHEL,      130, 110 }, // 23=Rachel
 		{ MAP_VEINS,       216, 123 }, // 24=Veins
 		{ MAP_MOSCOVIA,    223, 184 }, // 25=Moscovia
-		{ MAP_MIDCAMP,    180, 240 }, // 26=Midgard Camp
+		{ MAP_MIDCAMP,     180, 240 }, // 26=Midgard Camp
 		{ MAP_MANUK,       282, 138 }, // 27=Manuk
 		{ MAP_SPLENDIDE,   197, 176 }, // 28=Splendide
 		{ MAP_BRASILIS,    182, 239 }, // 29=Brasilis
-		{ MAP_DICASTES,   198, 187 }, // 30=El Dicastes
-		{ MAP_MORA,   44, 151 }, // 31=Mora
-		{ MAP_DEWATA,   200, 180 }, // 32=Dewata
-		{ MAP_MALANGDO,   140, 114 }, // 33=Malangdo Island
-		{ MAP_MALAYA,   242, 211 }, // 34=Malaya Port
-		{ MAP_ECLAGE,   110, 39 }, // 35=Eclage
+		{ MAP_DICASTES,    198, 187 }, // 30=El Dicastes
+		{ MAP_MORA,         44, 151 }, // 31=Mora
+		{ MAP_DEWATA,      200, 180 }, // 32=Dewata
+		{ MAP_MALANGDO,    140, 114 }, // 33=Malangdo Island
+		{ MAP_MALAYA,      242, 211 }, // 34=Malaya Port
+		{ MAP_ECLAGE,      110,  39 }, // 35=Eclage
 	};
  
 	nullpo_retr(-1, sd);
@@ -2448,7 +2455,7 @@ ACMD_FUNC(memo)
 	if( !message || !*message || sscanf(message, "%d", &position) < 1 )
 	{
 		int i;
-		clif_displaymessage(sd->fd,  "Your actual memo positions are:");
+		clif_displaymessage(sd->fd,  msg_txt(668));
 		for( i = 0; i < MAX_MEMOPOINTS; i++ )
 		{
 			if( sd->status.memo_point[i].map )
@@ -6418,6 +6425,7 @@ ACMD_FUNC(adjgroup)
 	}
 	
 	sd->group_id = new_group;
+	pc_group_pc_load(sd);/* update cache */
 	clif_displaymessage(fd, "Group changed successfully.");
 	clif_displaymessage(sd->fd, "Your group has changed.");
 	return 0;
@@ -8913,66 +8921,61 @@ static void atcommand_get_suggestions(struct map_session_data* sd, const char *n
 	DBIterator* alias_iter;
 	AtCommandInfo* command_info = NULL;
 	AliasInfo* alias_info = NULL;
-	AtCommandType type;
+	AtCommandType type = atcommand ? COMMAND_ATCOMMAND : COMMAND_CHARCOMMAND;
+	char* full_match[MAX_SUGGESTIONS];
 	char* suggestions[MAX_SUGGESTIONS];
-	int count = 0;
-	
+	char* match;
+	int prefix_count = 0, full_count = 0;
+	bool can_use;
+
 	if (!battle_config.atcommand_suggestions_enabled)
 		return;
 
 	atcommand_iter = db_iterator(atcommand_db);
-	alias_iter = db_iterator(atcommand_alias_db);	
+	alias_iter = db_iterator(atcommand_alias_db);
 	
-	if (atcommand)
-		type = COMMAND_ATCOMMAND;
-	else
-		type = COMMAND_CHARCOMMAND;
-
-	
-	// First match the beginnings of the commands
-	for (command_info = dbi_first(atcommand_iter); dbi_exists(atcommand_iter) && count < MAX_SUGGESTIONS; command_info = dbi_next(atcommand_iter)) {
-		if ( strstr(command_info->command, name) == command_info->command && pc_can_use_command(sd, command_info->command, type) )
-		{
-			suggestions[count] = command_info->command;
-			++count;
+	// Build the matches
+	for (command_info = dbi_first(atcommand_iter); dbi_exists(atcommand_iter); command_info = dbi_next(atcommand_iter))     {
+		match = strstr(command_info->command, name);
+		can_use = pc_can_use_command(sd, command_info->command, type);
+		if ( prefix_count < MAX_SUGGESTIONS && match == command_info->command && can_use ) {
+			suggestions[prefix_count] = command_info->command;
+			++prefix_count;
 		}
-	}
-
-	for (alias_info = dbi_first(alias_iter); dbi_exists(alias_iter) && count < MAX_SUGGESTIONS; alias_info = dbi_next(alias_iter)) {
-		if ( strstr(alias_info->alias, name) == alias_info->alias && pc_can_use_command(sd, alias_info->command->command, type) )
-		{
-			suggestions[count] = alias_info->alias;
-			++count;
+		if ( full_count < MAX_SUGGESTIONS && match != NULL && match != command_info->command && can_use ) {
+			full_match[full_count] = command_info->command;
+			++full_count;
 		}
 	}
 	
-	// Fill up the space left, with full matches
-	for (command_info = dbi_first(atcommand_iter); dbi_exists(atcommand_iter) && count < MAX_SUGGESTIONS; command_info = dbi_next(atcommand_iter)) {
-		if ( strstr(command_info->command, name) != NULL && pc_can_use_command(sd, command_info->command, type) )
-		{
-			suggestions[count] = command_info->command;
-			++count;
+	for (alias_info = dbi_first(alias_iter); dbi_exists(alias_iter); alias_info = dbi_next(alias_iter)) {
+		match = strstr(alias_info->alias, name);
+		can_use = pc_can_use_command(sd, alias_info->command->command, type);
+		if ( prefix_count < MAX_SUGGESTIONS && match == alias_info->alias && can_use) {
+			suggestions[prefix_count] = alias_info->alias;
+			++prefix_count;
+		}
+		if ( full_count < MAX_SUGGESTIONS && match != NULL && match != alias_info->alias && can_use ) {
+			full_match[full_count] = alias_info->alias;
+			++full_count;
 		}
 	}
 
-	for (alias_info = dbi_first(alias_iter); dbi_exists(alias_iter) && count < MAX_SUGGESTIONS; alias_info = dbi_next(alias_iter)) {
-		if ( strstr(alias_info->alias, name) != NULL && pc_can_use_command(sd, alias_info->command->command, type) )
-		{
-			suggestions[count] = alias_info->alias;
-			++count;
-		}
-	}
-
-	if (count > 0)
-	{
+	if ((full_count+prefix_count) > 0) {
 		char buffer[512];
 		int i;
 
+		// Merge full match and prefix match results
+		if (prefix_count < MAX_SUGGESTIONS) {
+			memmove(&suggestions[prefix_count], full_match, sizeof(char*) * (MAX_SUGGESTIONS-prefix_count));
+			prefix_count = min(prefix_count+full_count, MAX_SUGGESTIONS);
+		}
+
+		// Build the suggestion string
 		strcpy(buffer, msg_txt(205));
 		strcat(buffer,"\n");
 		
-		for(i=0; i < count; ++i)
-		{
+		for(i=0; i < prefix_count; ++i) {
 			strcat(buffer,suggestions[i]);
 			strcat(buffer," ");
 		}
@@ -8997,9 +9000,6 @@ bool is_atcommand(const int fd, struct map_session_data* sd, const char* message
 	
 	TBL_PC * ssd = NULL; //sd for target
 	AtCommandInfo * info;
-
-	// @commands (script based)
-	Atcmd_Binding * binding;
 
 	nullpo_retr(false, sd);
 	
@@ -9079,11 +9079,12 @@ bool is_atcommand(const int fd, struct map_session_data* sd, const char* message
 		params[0] = '\0';
 
 	// @commands (script based)
-	if(type == 1) {
+	if(type == 1 && atcmd_binding_count > 0) {
+		struct atcmd_binding_data * binding;
+
 		// Check if the command initiated is a character command
 		if (*message == charcommand_symbol &&
-	    (ssd = map_nick2sd(charname)) == NULL && (ssd = map_nick2sd(charname2)) == NULL )
-		{
+				(ssd = map_nick2sd(charname)) == NULL && (ssd = map_nick2sd(charname2)) == NULL ) {
 			sprintf(output, "%s failed. Player not found.", command);
 			clif_displaymessage(fd, output);
 			return true;

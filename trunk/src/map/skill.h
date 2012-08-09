@@ -154,6 +154,7 @@ struct skill_unit_group {
 	int unit_id;
 	int group_id;
 	int unit_count,alive_count;
+	int item_id; //store item used.
 	struct skill_unit *unit;
 	struct {
 		unsigned ammo_consume : 1;
@@ -1787,7 +1788,7 @@ enum wl_spheres {
 	WLS_STONE,
 };
 int skill_spellbook (struct map_session_data *sd, int nameid);
-int skill_stasis_check(struct block_list *bl, int src_id, int skillid);
+int skill_block_check(struct block_list *bl, enum sc_type type, int skillid);
 /**
  * Guilottine Cross
  **/

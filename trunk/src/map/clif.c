@@ -1255,6 +1255,18 @@ static void clif_spiritball_single(int fd, struct map_session_data *sd)
 	WFIFOSET(fd, packet_len(0x1e1));
 }
 
+/*==========================================
+ * Kagerou/Oboro amulet spirit
+ *------------------------------------------*/
+static void clif_talisman_single(int fd, struct map_session_data *sd, short type)
+{
+	WFIFOHEAD(fd, packet_len(0x08cf));
+	WFIFOW(fd,0)=0x08cf;
+	WFIFOL(fd,2)=sd->bl.id;
+	WFIFOW(fd,6)=type;
+	WFIFOW(fd,8)=sd->talisman[type];
+	WFIFOSET(fd, packet_len(0x08cf));
+}
 
 /*==========================================
  * Run when player changes map / refreshes
@@ -1348,6 +1360,7 @@ int clif_spawn(struct block_list *bl)
 	case BL_PC:
 		{
 			TBL_PC *sd = ((TBL_PC*)bl);
+			int i;
 			if (sd->spiritball > 0)
 				clif_spiritball(sd);
 			if(sd->state.size==2) // tiny/big players [Valaris]
@@ -1359,6 +1372,10 @@ int clif_spawn(struct block_list *bl)
 			if( sd->sc.option&OPTION_MOUNTING ) {
 				//New Mounts are not complaint to the original method, so we gotta tell this guy that he is mounting.
 				clif_status_load_notick(&sd->bl,SI_ALL_RIDING,2,1,0,0);
+			}
+			for(i = 1; i < 5; i++){
+				if( sd->talisman[i] > 0 )
+					clif_talisman(sd, i);
 			}
 		#ifdef NEW_CARTS
 			if( sd->sc.data[SC_PUSH_CART] )
@@ -2279,7 +2296,7 @@ void clif_item_sub(unsigned char *buf, int n, struct item *i, struct item_data *
 	}
 
 }
-
+void clif_favorite_item(struct map_session_data* sd, unsigned short index);
 //Unified inventory function which sends all of the inventory (requires two packets, one for equipable items and one for stackable ones. [Skotlex]
 void clif_inventorylist(struct map_session_data *sd)
 {
@@ -2367,7 +2384,16 @@ void clif_inventorylist(struct map_session_data *sd)
 		WBUFW(bufe,2)=4+ne*se;
 		clif_send(bufe, WBUFW(bufe,2), &sd->bl, SELF);
 	}
-
+#if PACKETVER >= 20111122
+	for( i = 0; i < MAX_INVENTORY; i++ ) {
+		if( sd->status.inventory[i].nameid <= 0 || sd->inventory_data[i] == NULL )
+			continue;
+				
+		if ( sd->status.inventory[i].favorite )
+			clif_favorite_item(sd, i);
+	}
+#endif
+	
 	if( buf ) aFree(buf);
 	if( bufe ) aFree(bufe);
 }
@@ -4022,6 +4048,10 @@ static void clif_getareachar_pc(struct map_session_data* sd,struct map_session_d
 
 	if(dstsd->spiritball > 0)
 		clif_spiritball_single(sd->fd, dstsd);
+	for(i = 1; i < 5; i++){
+		if( dstsd->talisman[i] > 0 )
+			clif_talisman_single(sd->fd, dstsd, i);
+	}
 	if( dstsd->sc.option&OPTION_MOUNTING ) {
 		//New Mounts are not complaint to the original method, so we gotta tell this guy that I'm mounting.
 		clif_status_load_single(sd->fd,dstsd->bl.id,SI_ALL_RIDING,2,1,0,0);
@@ -5821,22 +5851,20 @@ void clif_item_repair_list(struct map_session_data *sd,struct map_session_data *
 
 /// Notifies the client about the result of a item repair request (ZC_ACK_ITEMREPAIR).
 /// 01fe <index>.W <result>.B
-void clif_item_repaireffect(struct map_session_data *sd,int nameid,int flag)
+void clif_item_repaireffect(struct map_session_data *sd,int idx,int flag)
 {
-	int view,fd;
+	int fd;
 
 	nullpo_retv(sd);
-	fd=sd->fd;
+
+	fd = sd->fd;
 
 	WFIFOHEAD(fd,packet_len(0x1fe));
 	WFIFOW(fd, 0)=0x1fe;
-	// FIXME: this is inventory index
-	if((view = itemdb_viewid(nameid)) > 0)
-		WFIFOW(fd, 2)=view;
-	else
-		WFIFOW(fd, 2)=nameid;
+	WFIFOW(fd, 2)=idx+2;
 	WFIFOB(fd, 4)=flag;
 	WFIFOSET(fd,packet_len(0x1fe));
+	
 }
 
 
@@ -6649,7 +6677,7 @@ void clif_sendegg(struct map_session_data *sd)
 	fd=sd->fd;
 	if (battle_config.pet_no_gvg && map_flag_gvg(sd->bl.m))
 	{	//Disable pet hatching in GvG grounds during Guild Wars [Skotlex]
-		clif_displaymessage(fd, "Pets are not allowed in Guild Wars.");
+		clif_displaymessage(fd, msg_txt(666));
 		return;
 	}
 	WFIFOHEAD(fd, MAX_INVENTORY * 2 + 4);
@@ -8188,6 +8216,7 @@ void clif_message(struct block_list* bl, const char* msg)
 // refresh the client's screen, getting rid of any effects
 void clif_refresh(struct map_session_data *sd)
 {
+	int i;
 	nullpo_retv(sd);
 
 	clif_changemap(sd,sd->mapindex,sd->bl.x,sd->bl.y);
@@ -8206,6 +8235,10 @@ void clif_refresh(struct map_session_data *sd)
 	clif_updatestatus(sd,SP_LUK);
 	if (sd->spiritball)
 		clif_spiritball_single(sd->fd, sd);
+	for(i = 1; i < 5; i++){
+		if( sd->talisman[i] > 0 )
+			clif_talisman_single(sd->fd, sd, i);
+	}
 	if (sd->vd.cloth_color)
 		clif_refreshlook(&sd->bl,sd->bl.id,LOOK_CLOTHES_COLOR,sd->vd.cloth_color,SELF);
 	if(merc_is_hom_active(sd->hd))
@@ -9161,7 +9194,7 @@ void clif_parse_LoadEndAck(int fd,struct map_session_data *sd)
 	{
 		if( battle_config.pet_no_gvg && map_flag_gvg(sd->bl.m) )
 		{	//Return the pet to egg. [Skotlex]
-			clif_displaymessage(sd->fd, "Pets are not allowed in Guild Wars.");
+			clif_displaymessage(sd->fd, msg_txt(666));
 			pet_menu(sd, 3); //Option 3 is return to egg.
 		}
 		else
@@ -9222,6 +9255,8 @@ void clif_parse_LoadEndAck(int fd,struct map_session_data *sd)
 
 		if (sd->sc.option&OPTION_RIDING)
 			clif_status_load(&sd->bl, SI_RIDING, 1);
+		else if (sd->sc.option&OPTION_WUGRIDER)
+			clif_status_load(&sd->bl, SI_WUGRIDER, 1);
 
 		if(sd->status.manner < 0)
 			sc_start(&sd->bl,SC_NOCHAT,100,0,0);
@@ -9240,12 +9275,11 @@ void clif_parse_LoadEndAck(int fd,struct map_session_data *sd)
 		if(merc_is_hom_active(sd->hd))
 			merc_hom_init_timers(sd->hd);
 
-		if (night_flag && map[sd->bl.m].flag.nightenabled)
-		{
+		if (night_flag && map[sd->bl.m].flag.nightenabled) {
 			sd->state.night = 1;
 			clif_status_load(&sd->bl, SI_NIGHT, 1);
 		}
-
+				
 		// Notify everyone that this char logged in [Skotlex].
 		map_foreachpc(clif_friendslist_toggle_sub, sd->status.account_id, sd->status.char_id, 1);
 
@@ -11815,9 +11849,7 @@ void clif_parse_OpenVending(int fd, struct map_session_data* sd)
 	}
     
 	if( vending_checknearnpc(&sd->bl) ) {
-		char output[150];
-		sprintf(output,"You're too close to a NPC, you must be at least %d cells away from any NPC.",battle_config.min_npc_vending_distance);
-		clif_displaymessage(sd->fd, output);
+		clif_displaymessage(sd->fd, msg_txt(662));
 		clif_skill_fail(sd, MC_VENDING, USESKILL_FAIL_LEVEL, 0);
 		return;
 	}
@@ -16064,7 +16096,7 @@ int clif_status_load_notick(struct block_list *bl,int type,int flag,int val1, in
 	WBUFL(buf,17) = val2;
 	WBUFL(buf,21) = val3;
 
-	clif_send(buf,packet_len(WBUFW(buf,0)),bl,AREA);
+	clif_send(buf,packet_len(0x043f),bl,AREA);
 	return 0;
 }
 //Notifies FD of ID's type
@@ -16116,6 +16148,76 @@ void clif_parse_SkillSelectMenu(int fd, struct map_session_data *sd) {
 	}
 	skill_select_menu(sd,RFIFOL(fd,2),RFIFOW(fd,6));
 	clif_menuskill_clear(sd);
+}
+/*==========================================
+ * Kagerou/Oboro amulet spirit
+ *------------------------------------------*/
+void clif_talisman(struct map_session_data *sd,short type)
+{
+	unsigned char buf[10];
+
+	nullpo_retv(sd);
+
+	WBUFW(buf,0)=0x08cf;
+	WBUFL(buf,2)=sd->bl.id;
+	WBUFW(buf,6)=type;
+	WBUFW(buf,8)=sd->talisman[type];
+	clif_send(buf,packet_len(0x08cf),&sd->bl,AREA);
+}
+/// Move Item from or to Personal Tab (CZ_WHATSOEVER) [FE]
+/// 0907 <index>.W
+///
+/// R 0908 <index>.w <type>.b
+/// type:
+/// 	0 = move item to personal tab
+/// 	1 = move item to normal tab
+void clif_parse_MoveItem(int fd, struct map_session_data *sd) {
+#if PACKETVER >= 20111122
+	int index;
+	
+	/* can't move while dead. */
+	if(pc_isdead(sd)) {
+		return;
+	}
+	
+	index = RFIFOW(fd,2)-2;
+	
+	if (index < 0 || index >= MAX_INVENTORY)
+		return;
+	
+	if ( sd->status.inventory[index].favorite && RFIFOB(fd, 4) == 1 )
+		sd->status.inventory[index].favorite = 0;
+	else if( RFIFOB(fd, 4) == 0 )
+		sd->status.inventory[index].favorite = 1;
+	else
+		return;/* nothing to do. */
+	
+	clif_favorite_item(sd, index);
+#endif
+}
+
+
+/// Items that are in favorite tab of inventory (ZC_ITEM_FAVORITE).
+/// 0900 <index>.W <favorite>.B
+void clif_favorite_item(struct map_session_data* sd, unsigned short index) {
+	int fd = sd->fd;
+	
+	WFIFOHEAD(fd,packet_len(0x908));
+	WFIFOW(fd,0) = 0x908;
+	WFIFOW(fd,2) = index+2;
+	WFIFOL(fd,4) = (sd->status.inventory[index].favorite == 1) ? 0 : 1;
+	WFIFOSET(fd,packet_len(0x908));
+}
+
+void clif_snap( struct block_list *bl, short x, short y ) {
+	unsigned char buf[10];
+
+	WBUFW(buf,0) = 0x8d2;
+	WBUFL(buf,2) = bl->id;
+	WBUFW(buf,6) = x;
+	WBUFW(buf,8) = y;
+	
+	clif_send(buf,packet_len(0x8d2),bl,AREA);
 }
 
 /*==========================================
@@ -16504,15 +16606,15 @@ static int packetdb_readdb(void)
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 	//#0x08C0
-		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 10,
+		0,  0, 10,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 	//#0x0900
 		0,  0,  0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,		
+		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,	
 	};
 	struct {
 		void (*func)(int, struct map_session_data *);
@@ -16714,6 +16816,8 @@ static int packetdb_readdb(void)
 		{clif_parse_SearchStoreInfoNextPage,"searchstoreinfonextpage"},
 		{clif_parse_CloseSearchStoreInfo,"closesearchstoreinfo"},
 		{clif_parse_SearchStoreInfoListItemClick,"searchstoreinfolistitemclick"},
+		/* */
+		{ clif_parse_MoveItem , "moveitem" },
 		{NULL,NULL}
 	};
 

@@ -1707,6 +1707,7 @@ int map_quit(struct map_session_data *sd) {
 			status_change_end(&sd->bl, SC_ENDURE, INVALID_TIMER); //No need to save infinite endure.
 		status_change_end(&sd->bl, SC_WEIGHT50, INVALID_TIMER);
 		status_change_end(&sd->bl, SC_WEIGHT90, INVALID_TIMER);
+		status_change_end(&sd->bl, SC_KYOUGAKU, INVALID_TIMER);
 		if (battle_config.debuff_on_logout&1) {
 			status_change_end(&sd->bl, SC_ORCISH, INVALID_TIMER);
 			status_change_end(&sd->bl, SC_STRIPWEAPON, INVALID_TIMER);
@@ -3501,19 +3502,20 @@ int map_sql_close(void)
 	ShowStatus("Close Map DB Connection....\n");
 	Sql_Free(mmysql_handle);
 	mmysql_handle = NULL;
-
+#ifndef BETA_THREAD_TEST
 	if (log_config.sql_logs)
 	{
 		ShowStatus("Close Log DB Connection....\n");
 		Sql_Free(logmysql_handle);
 		logmysql_handle = NULL;
 	}
-
+#endif
 	return 0;
 }
 
 int log_sql_init(void)
 {
+#ifndef BETA_THREAD_TEST
 	// log db connection
 	logmysql_handle = Sql_Malloc();
 
@@ -3525,7 +3527,7 @@ int log_sql_init(void)
 	if( strlen(default_codepage) > 0 )
 		if ( SQL_ERROR == Sql_SetEncoding(logmysql_handle, default_codepage) )
 			Sql_ShowDebug(logmysql_handle);
-
+#endif
 	return 0;
 }
 
@@ -3904,7 +3906,7 @@ int do_init(int argc, char *argv[])
 		char ip_str[16];
 		ip2str(addr_[0], ip_str);
 
-		ShowError("Not all IP addresses in map_athena.conf configured, autodetecting...\n");
+		ShowWarning("Not all IP addresses in map_athena.conf configured, autodetecting...\n");
 
 		if (naddr_ == 0)
 			ShowError("Unable to determine your IP address...\n");
