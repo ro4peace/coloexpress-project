@@ -332,6 +332,8 @@ struct map_session_data {
 
 	short spiritball, spiritball_old;
 	int spirit_timer[MAX_SKILL_LEVEL];
+	short talisman[ELE_POISON+1]; // There are actually 5 talisman Fire, Ice, Wind, Earth & Poison maybe because its color violet.
+	int talisman_timer[ELE_POISON+1][10];
 
 	unsigned char potion_success_counter; //Potion successes in row counter
 	unsigned char mission_count; //Stores the bounty kill count for TK_MISSION
@@ -454,6 +456,12 @@ struct map_session_data {
 	unsigned int npc_idle_tick;
 #endif
 
+	struct {
+		struct script_code **bonus;/* the script */
+		unsigned short *id;/* array of combo ids */
+		unsigned char count;
+	} combos;
+	
 	/**
 	 * Guarantees your friend request is legit (for bugreport:4629)
 	 **/
@@ -543,12 +551,13 @@ enum equip_pos {
 #define EQP_ARMS (EQP_HAND_R|EQP_HAND_L)
 #define EQP_HELM (EQP_HEAD_LOW|EQP_HEAD_MID|EQP_HEAD_TOP)
 #define EQP_ACC (EQP_ACC_L|EQP_ACC_R)
+#define EQP_COSTUME (EQP_COSTUME_HEAD_TOP|EQP_COSTUME_HEAD_MID|EQP_COSTUME_HEAD_LOW)
 
 /// Equip positions that use a visible sprite
 #if PACKETVER < 20110111
 	#define EQP_VISIBLE EQP_HELM
-#else
-	#define EQP_VISIBLE (EQP_HELM|EQP_GARMENT)
+#else	
+	#define EQP_VISIBLE (EQP_HELM|EQP_GARMENT|EQP_COSTUME)
 #endif
 
 //Equip indexes constants. (eg: sd->equip_index[EQI_AMMO] returns the index
@@ -635,7 +644,7 @@ enum e_pc_permission {
 
 //Weapon check considering dual wielding.
 #define pc_check_weapontype(sd, type) ((type)&((sd)->status.weapon < MAX_WEAPON_TYPE? \
-	1<<(sd)->status.weapon:(1<<(sd)->weapontype1)|(1<<(sd)->weapontype2)))
+	1<<(sd)->status.weapon:(1<<(sd)->weapontype1)|(1<<(sd)->weapontype2)|(1<<(sd)->status.weapon)))
 //Checks if the given class value corresponds to a player class. [Skotlex]
 //JOB_NOVICE isn't checked for class_ is supposed to be unsigned
 #define pcdb_checkid_sub(class_) \
@@ -909,4 +918,10 @@ void pc_overheat(struct map_session_data *sd, int val);
 int pc_banding(struct map_session_data *sd, short skill_lv);
 
 void pc_itemcd_do(struct map_session_data *sd, bool load);
+
+int pc_load_combo(struct map_session_data *sd);
+
+int pc_add_talisman(struct map_session_data *sd,int interval,int max,int type);
+int pc_del_talisman(struct map_session_data *sd,int count,int type);
+
 #endif /* _PC_H_ */

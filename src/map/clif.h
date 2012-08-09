@@ -469,7 +469,7 @@ void clif_clearcart(int fd);
 void clif_item_identify_list(struct map_session_data *sd);
 void clif_item_identified(struct map_session_data *sd,int idx,int flag);
 void clif_item_repair_list(struct map_session_data *sd, struct map_session_data *dstsd);
-void clif_item_repaireffect(struct map_session_data *sd, int nameid, int flag);
+void clif_item_repaireffect(struct map_session_data *sd, int idx, int flag);
 void clif_item_damaged(struct map_session_data* sd, unsigned short position);
 void clif_item_refine_list(struct map_session_data *sd);
 
@@ -735,6 +735,10 @@ int clif_status_load_single(int fd, int id,int type,int flag,int val1, int val2,
 int clif_skill_itemlistwindow( struct map_session_data *sd, int skill_id, int skill_lv );
 void clif_elemental_info(struct map_session_data *sd);
 void clif_elemental_updatestatus(struct map_session_data *sd, int type);
+
+void clif_talisman(struct map_session_data *sd, short type);
+
+void clif_snap( struct block_list *bl, short x, short y );
 
 /**
  * Color Table

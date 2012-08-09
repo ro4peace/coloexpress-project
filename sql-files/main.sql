@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `char` (
   `char_id` int(11) unsigned NOT NULL auto_increment,
   `account_id` int(11) unsigned NOT NULL default '0',
   `char_num` tinyint(1) NOT NULL default '0',
-  `name` varchar(30) NOT NULL default '',
+  `name` varchar(30) NOT NULL DEFAULT '',
   `class` smallint(6) unsigned NOT NULL default '0',
   `base_level` smallint(6) unsigned NOT NULL default '1',
   `job_level` smallint(6) unsigned NOT NULL default '1',
@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS `char` (
   `rename` SMALLINT(3) unsigned NOT NULL default '0',
   `delete_date` INT(11) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`char_id`),
+  UNIQUE KEY `name_key` (`name`),
   KEY `account_id` (`account_id`),
   KEY `party_id` (`party_id`),
   KEY `guild_id` (`guild_id`),
@@ -399,6 +400,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
   `card2` smallint(11) NOT NULL default '0',
   `card3` smallint(11) NOT NULL default '0',
   `expire_time` int(11) unsigned NOT NULL default '0',
+  `favorite` tinyint(3) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
   KEY `char_id` (`char_id`)
 ) ENGINE=MyISAM;

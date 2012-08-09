@@ -61,6 +61,13 @@
 #include <setjmp.h>
 #include <errno.h>
 
+#ifdef BETA_THREAD_TEST
+	#include "../common/atomic.h"
+	#include "../common/spinlock.h"
+	#include "../common/thread.h"
+	#include "../common/mutex.h"
+#endif
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //## TODO possible enhancements: [FlavioJS]
@@ -305,6 +312,30 @@ typedef struct script_function {
 extern script_function buildin_func[];
 
 static struct linkdb_node* sleep_db;// int oid -> struct script_state*
+
+#ifdef BETA_THREAD_TEST
+/**
+ * MySQL Query Slave
+ **/
+static SPIN_LOCK queryThreadLock;
+static rAthread queryThread = NULL;
+static ramutex	queryThreadMutex = NULL;
+static racond	queryThreadCond = NULL;
+static volatile int32 queryThreadTerminate = 0;
+
+struct queryThreadEntry {
+	bool ok;
+	bool type; /* main db or log db? */
+	struct script_state *st;
+};
+
+/* Ladies and Gentleman the Manager! */
+struct {
+	struct queryThreadEntry **entry;/* array of structs */
+	int count;
+	int timer;/* used to receive processed entries */
+} queryThreadData;
+#endif
 
 /*==========================================
  * ローカルプロトタイプ宣言 (必要な物のみ)
@@ -1052,8 +1083,7 @@ static void parse_nextline(bool first, const char* p)
 /// Parse a variable assignment using the direct equals operator
 /// @param p script position where the function should run from
 /// @return NULL if not a variable assignment, the new position otherwise
-const char* parse_variable(const char* p)
-{
+const char* parse_variable(const char* p) {
 	int i, j, word;
 	c_op type = C_NOP;
 	const char *p2 = NULL;
@@ -1063,21 +1093,17 @@ const char* parse_variable(const char* p)
 	p = skip_word(p);
 	p = skip_space(p);
 
-	if( p == NULL )
-	{// end of the line or invalid buffer
+	if( p == NULL ) {// end of the line or invalid buffer
 		return NULL;
 	}
 
-	if( *p == '[' )
-	{// array variable so process the array as appropriate
-		for( p2 = p, i = 0, j = 1; p; ++ i )
-		{
+	if( *p == '[' ) {// array variable so process the array as appropriate
+		for( p2 = p, i = 0, j = 1; p; ++ i ) {
 			if( *p ++ == ']' && --(j) == 0 ) break;
 			if( *p == '[' ) ++ j;
 		}
 
-		if( !(p = skip_space(p)) )
-		{// end of line or invalid characters remaining
+		if( !(p = skip_space(p)) ) {// end of line or invalid characters remaining
 			disp_error_message("Missing right expression or closing bracket for variable.", p);
 		}
 	}
@@ -1102,29 +1128,24 @@ const char* parse_variable(const char* p)
 		return NULL;
 	}
 
-	switch( type )
-	{
-		case C_EQ:
-		{// incremental modifier
+	switch( type ) {
+		case C_EQ: {// incremental modifier
 			p = skip_space( &p[1] );
 		}
 		break;
 
 		case C_L_SHIFT:
-		case C_R_SHIFT:
-		{// left or right shift modifier
+		case C_R_SHIFT: {// left or right shift modifier
 			p = skip_space( &p[3] );
 		}
 		break;
 
-		default:
-		{// normal incremental command
+		default: {// normal incremental command
 			p = skip_space( &p[2] );
 		}
 	}
 
-	if( p == NULL )
-	{// end of line or invalid buffer
+	if( p == NULL ) {// end of line or invalid buffer
 		return NULL;
 	}
 	
@@ -1148,8 +1169,7 @@ const char* parse_variable(const char* p)
 		disp_error_message("Cannot modify a variable which has the same name as a function or label.", p);
 	}
 
-	if( p2 )
-	{// process the variable index
+	if( p2 ) {// process the variable index
 		const char* p3 = NULL;
 
 		// push the getelementofarray method into the stack
@@ -1161,29 +1181,22 @@ const char* parse_variable(const char* p)
 		p3 = parse_subexpr(p2 + 1, 1);
 		p3 = skip_space(p3);
 
-		if( *p3 != ']' )
-		{// closing parenthesis is required for this script
+		if( *p3 != ']' ) {// closing parenthesis is required for this script
 			disp_error_message("Missing closing ']' parenthesis for the variable assignment.", p3);
 		}
 
 		// push the closing function stack operator onto the stack
 		add_scriptc(C_FUNC);
 		p3 ++;
-	}
-	else
-	{// simply push the variable or value onto the stack
+	} else {// simply push the variable or value onto the stack
 		add_scriptl(word);
 	}
 	
-	add_scriptc(C_REF);
-
-	if( type == C_ADD_PP || type == C_SUB_PP )
-	{// incremental operator for the method
+	if( type == C_ADD_PP || type == C_SUB_PP ) {// incremental operator for the method
+		add_scriptc(C_REF);
 		add_scripti(1);
 		add_scriptc(type == C_ADD_PP ? C_ADD : C_SUB);
-	}
-	else
-	{// process the value as an expression
+	} else {// process the value as an expression
 		p = parse_subexpr(p, -1);
 
 		if( type != C_EQ )
@@ -3024,6 +3037,7 @@ void script_free_state(struct script_state* st)
 	pop_stack(st, 0, st->stack->sp);
 	aFree(st->stack->stack_data);
 	aFree(st->stack);
+	st->stack = NULL;
 	st->pos = -1;
 	aFree(st);
 }
@@ -3220,10 +3234,10 @@ void op_2(struct script_state *st, int op)
 	left = script_getdatatop(st, -2);
 	right = script_getdatatop(st, -1);
 
-	if (st->op2ref)
-	{
-		if (data_isreference(left))
+	if (st->op2ref) {
+		if (data_isreference(left)) {
 			leftref = *left;
+		}
 
 		st->op2ref = 0;
 	}
@@ -3392,7 +3406,7 @@ static void script_check_buildin_argtype(struct script_state* st, int func)
 				case 'l':
 					if( !data_islabel(data) && !data_isfunclabel(data) )
 					{// label
-						ShowWarning("Unexpected type for argument %d. Expected label.\n", idx-1);
+						ShowWarning("Unexpected type for argument %d. Expected label, got %s\n", idx-1,script_op2name(data->type));
 						script_reportdata(data);
 						invalid++;
 					}
@@ -3652,8 +3666,8 @@ static void script_attach_state(struct script_state* st)
  *------------------------------------------*/
 void run_script_main(struct script_state *st)
 {
-	int cmdcount=script_config.check_cmdcount;
-	int gotocount=script_config.check_gotocount;
+	int cmdcount = script_config.check_cmdcount;
+	int gotocount = script_config.check_gotocount;
 	TBL_PC *sd;
 	struct script_stack *stack=st->stack;
 	struct npc_data *nd;
@@ -3951,19 +3965,186 @@ void script_setarray_pc(struct map_session_data* sd, const char* varname, uint8 
 		refcache[0] = key;
 	}
 }
+#ifdef BETA_THREAD_TEST
+int buildin_query_sql_sub(struct script_state* st, Sql* handle);
 
+/* used to receive items the queryThread has already processed */
+int queryThread_timer(int tid, unsigned int tick, int id, intptr_t data) {
+	int i, cursor = 0;
+	bool allOk = true;
+	
+	EnterSpinLock(&queryThreadLock);
+	
+	for( i = 0; i < queryThreadData.count; i++ ) {
+		struct queryThreadEntry *entry = queryThreadData.entry[i];
+		
+		if( !entry->ok ) {
+			allOk = false;
+			continue;
+		}
 
+		run_script_main(entry->st);
+		
+		entry->st = NULL;/* empty entries */
+		aFree(entry);
+		queryThreadData.entry[i] = NULL;
+	}
+
+	
+	if( allOk ) {
+		/* cancel the repeating timer -- it'll re-create itself when necessary, dont need to remain looping */
+		delete_timer(queryThreadData.timer, queryThread_timer);
+		queryThreadData.timer = INVALID_TIMER;
+	}
+	
+	/* now lets clear the mess. */
+	for( i = 0; i < queryThreadData.count; i++ ) {
+		struct queryThreadEntry *entry = queryThreadData.entry[i];
+		if( entry == NULL )
+			continue;/* entry on hold */
+		
+		/* move */
+		memmove(&queryThreadData.entry[cursor], &queryThreadData.entry[i], sizeof(struct queryThreadEntry*));
+		
+		cursor++;
+	}
+	
+	queryThreadData.count = cursor;
+	
+	LeaveSpinLock(&queryThreadLock);
+	
+	return 0;
+}
+
+void queryThread_add(struct script_state *st, bool type) {
+	int idx = 0;
+	struct queryThreadEntry* entry = NULL;
+	
+	EnterSpinLock(&queryThreadLock);
+	
+	if( queryThreadData.count++ != 0 )
+		RECREATE(queryThreadData.entry, struct queryThreadEntry* , queryThreadData.count);
+	
+	idx = queryThreadData.count-1;
+	
+	CREATE(queryThreadData.entry[idx],struct queryThreadEntry,1);
+	
+	entry = queryThreadData.entry[idx];
+	
+	entry->st = st;
+	entry->ok = false;
+	entry->type = type;
+	if( queryThreadData.timer == INVALID_TIMER ) { /* start the receiver timer */
+		queryThreadData.timer = add_timer_interval(gettick() + 100, queryThread_timer, 0, 0, 100);
+	}
+	
+	LeaveSpinLock(&queryThreadLock);
+	
+	/* unlock the queryThread */
+	racond_signal(queryThreadCond);
+}
+/* adds a new log to the queue */
+void queryThread_log(char * entry, int length) {
+	int idx = logThreadData.count;
+	
+	EnterSpinLock(&queryThreadLock);
+	
+	if( logThreadData.count++ != 0 )
+		RECREATE(logThreadData.entry, char* , logThreadData.count);	
+	
+	CREATE(logThreadData.entry[idx], char, length + 1 );
+	safestrncpy(logThreadData.entry[idx], entry, length + 1 );
+	
+	LeaveSpinLock(&queryThreadLock);
+
+	/* unlock the queryThread */
+	racond_signal(queryThreadCond);
+}
+
+/* queryThread_main */
+static void *queryThread_main(void *x) {
+	Sql *queryThread_handle = Sql_Malloc();
+	int i;
+	
+	if ( SQL_ERROR == Sql_Connect(queryThread_handle, map_server_id, map_server_pw, map_server_ip, map_server_port, map_server_db) )
+		exit(EXIT_FAILURE);
+	
+	if( strlen(default_codepage) > 0 )
+		if ( SQL_ERROR == Sql_SetEncoding(queryThread_handle, default_codepage) )
+			Sql_ShowDebug(queryThread_handle);
+
+	if( log_config.sql_logs ) {
+		logmysql_handle = Sql_Malloc();
+		
+		if ( SQL_ERROR == Sql_Connect(logmysql_handle, log_db_id, log_db_pw, log_db_ip, log_db_port, log_db_db) )
+			exit(EXIT_FAILURE);
+		
+		if( strlen(default_codepage) > 0 )
+			if ( SQL_ERROR == Sql_SetEncoding(logmysql_handle, default_codepage) )
+				Sql_ShowDebug(logmysql_handle);
+	}
+	
+	while( 1 ) {
+		
+		if(queryThreadTerminate > 0)
+			break;
+				
+		EnterSpinLock(&queryThreadLock);
+		
+		/* mess with queryThreadData within the lock */
+		for( i = 0; i < queryThreadData.count; i++ ) {
+			struct queryThreadEntry *entry = queryThreadData.entry[i];
+			
+			if( entry->ok )
+				continue;
+			else if ( !entry->st || !entry->st->stack ) {
+				entry->ok = true;/* dispose */
+				continue;
+			}
+						
+			buildin_query_sql_sub(entry->st, entry->type ? logmysql_handle : queryThread_handle);
+			
+			entry->ok = true;/* we're done with this */
+		}
+		
+		/* also check for any logs in need to be sent */
+		if( log_config.sql_logs ) {
+			for( i = 0; i < logThreadData.count; i++ ) {
+				if( SQL_ERROR == Sql_Query(logmysql_handle, logThreadData.entry[i]) )
+					Sql_ShowDebug(logmysql_handle);
+				aFree(logThreadData.entry[i]);
+			}
+			logThreadData.count = 0;
+		}
+		
+		LeaveSpinLock(&queryThreadLock);
+		
+		ramutex_lock( queryThreadMutex );
+		racond_wait( queryThreadCond,	queryThreadMutex,  -1 );
+		ramutex_unlock( queryThreadMutex );
+
+	}
+		
+	Sql_Free(queryThread_handle);
+	
+	if( log_config.sql_logs ) {
+		Sql_Free(logmysql_handle);
+	}
+	
+	return NULL;
+}
+#endif
 /*==========================================
  * 終了
  *------------------------------------------*/
-int do_final_script()
-{
+int do_final_script() {
+	int i;
 #ifdef DEBUG_HASH
 	if (battle_config.etc_log)
 	{
 		FILE *fp = fopen("hash_dump.txt","wt");
 		if(fp) {
-			int i,count[SCRIPT_HASH_SIZE];
+			int count[SCRIPT_HASH_SIZE];
 			int count2[SCRIPT_HASH_SIZE]; // number of buckets with a certain number of items
 			int n=0;
 			int min=INT_MAX,max=0,zero=0;
@@ -4033,29 +4214,107 @@ int do_final_script()
 	if (str_buf)
 		aFree(str_buf);
 
+	for( i = 0; i < atcmd_binding_count; i++ ) {
+		aFree(atcmd_binding[i]);
+	}
+	
+	if( atcmd_binding_count != 0 )
+		aFree(atcmd_binding);
+#ifdef BETA_THREAD_TEST
+	/* QueryThread */
+	InterlockedIncrement(&queryThreadTerminate);
+	racond_signal(queryThreadCond);
+	rathread_wait(queryThread, NULL);
+	
+	// Destroy cond var and mutex.
+	racond_destroy( queryThreadCond );
+	ramutex_destroy( queryThreadMutex );
+	
+	/* Clear missing vars */
+	for( i = 0; i < queryThreadData.count; i++ ) {
+		aFree(queryThreadData.entry[i]);
+	}
+	
+	aFree(queryThreadData.entry);
+	
+	for( i = 0; i < logThreadData.count; i++ ) {
+		aFree(logThreadData.entry[i]);
+	}
+	
+	aFree(logThreadData.entry);	
+#endif
+	
 	return 0;
 }
 /*==========================================
  * 初期化
  *------------------------------------------*/
-int do_init_script()
-{
+int do_init_script() {
 	userfunc_db=strdb_alloc(DB_OPT_DUP_KEY,0);
 	scriptlabel_db=strdb_alloc(DB_OPT_DUP_KEY,50);
 	autobonus_db = strdb_alloc(DB_OPT_DUP_KEY,0);
 
 	mapreg_init();
+#ifdef BETA_THREAD_TEST
+	CREATE(queryThreadData.entry, struct queryThreadEntry*, 1);
+	queryThreadData.count = 0;
+	CREATE(logThreadData.entry, char *, 1);
+	logThreadData.count = 0;
+	/* QueryThread Start */
 	
+	InitializeSpinLock(&queryThreadLock);
+	
+	queryThreadData.timer = INVALID_TIMER;
+	queryThreadTerminate = 0;
+	queryThreadMutex = ramutex_create();
+	queryThreadCond = racond_create();
+	
+	queryThread = rathread_create(queryThread_main, NULL);
+	
+	if(queryThread == NULL){
+		ShowFatalError("do_init_script: cannot spawn Query Thread.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	add_timer_func_list(queryThread_timer, "queryThread_timer");
+#endif
 	return 0;
 }
 
 int script_reload() {
+	int i;
+
+#ifdef BETA_THREAD_TEST
+	/* we're reloading so any queries undergoing should be...exterminated. */
+	EnterSpinLock(&queryThreadLock);
+	
+	for( i = 0; i < queryThreadData.count; i++ ) {
+		aFree(queryThreadData.entry[i]);
+	}
+	queryThreadData.count = 0;
+	
+	if( queryThreadData.timer != INVALID_TIMER ) {
+		delete_timer(queryThreadData.timer, queryThread_timer);
+		queryThreadData.timer = INVALID_TIMER;
+	}
+	
+	LeaveSpinLock(&queryThreadLock);
+#endif
+
+	
 	userfunc_db->clear(userfunc_db, db_script_free_code_sub);
 	db_clear(scriptlabel_db);
 
 	// @commands (script based)
 	// Clear bindings
-	memset(atcmd_binding,0,sizeof(atcmd_binding));
+	for( i = 0; i < atcmd_binding_count; i++ ) {
+		aFree(atcmd_binding[i]);
+	}
+	
+	if( atcmd_binding_count != 0 )
+		aFree(atcmd_binding);
+	
+	atcmd_binding_count = 0;
 
 	if(sleep_db) {
 		struct linkdb_node *n = (struct linkdb_node *)sleep_db;
@@ -4264,7 +4523,21 @@ BUILDIN_FUNC(menu)
 		}
 		st->state = RERUNLINE;
 		sd->state.menu_or_input = 1;
-		clif_scriptmenu(sd, st->oid, StringBuf_Value(&buf));
+		
+		/**
+		 * menus beyond this length crash the client (see bugreport:6402)
+		 **/
+		if( StringBuf_Length(&buf) >= 2047 ) {
+			struct npc_data * nd = map_id2nd(st->oid);
+			char* menu;
+			CREATE(menu, char, 2048);
+			safestrncpy(menu, StringBuf_Value(&buf), 2047);
+			ShowWarning("NPC Menu too long! (source:%s / length:%d)\n",nd?nd->name:"Unknown",StringBuf_Length(&buf));
+			clif_scriptmenu(sd, st->oid, menu);
+			aFree(menu);
+		} else
+			clif_scriptmenu(sd, st->oid, StringBuf_Value(&buf));
+		
 		StringBuf_Destroy(&buf);
 
 		if( sd->npc_menu >= 0xff )
@@ -4334,44 +4607,51 @@ BUILDIN_FUNC(select)
 	if( sd == NULL )
 		return 0;
 
-	if( sd->state.menu_or_input == 0 )
-	{
+	if( sd->state.menu_or_input == 0 ) {
 		struct StringBuf buf;
 
 		StringBuf_Init(&buf);
 		sd->npc_menu = 0;
-		for( i = 2; i <= script_lastdata(st); ++i )
-		{
+		for( i = 2; i <= script_lastdata(st); ++i ) {
 			text = script_getstr(st, i);
+			
 			if( sd->npc_menu > 0 )
 				StringBuf_AppendStr(&buf, ":");
+
 			StringBuf_AppendStr(&buf, text);
 			sd->npc_menu += menu_countoptions(text, 0, NULL);
 		}
 
 		st->state = RERUNLINE;
 		sd->state.menu_or_input = 1;
-		clif_scriptmenu(sd, st->oid, StringBuf_Value(&buf));
+		
+		/**
+		 * menus beyond this length crash the client (see bugreport:6402)
+		 **/
+		if( StringBuf_Length(&buf) >= 2047 ) {
+			struct npc_data * nd = map_id2nd(st->oid);
+			char* menu;
+			CREATE(menu, char, 2048);
+			safestrncpy(menu, StringBuf_Value(&buf), 2047);
+			ShowWarning("NPC Menu too long! (source:%s / length:%d)\n",nd?nd->name:"Unknown",StringBuf_Length(&buf));
+			clif_scriptmenu(sd, st->oid, menu);
+			aFree(menu);
+		} else
+			clif_scriptmenu(sd, st->oid, StringBuf_Value(&buf));
 		StringBuf_Destroy(&buf);
 
-		if( sd->npc_menu >= 0xff )
-		{
+		if( sd->npc_menu >= 0xff ) {
 			ShowWarning("buildin_select: Too many options specified (current=%d, max=254).\n", sd->npc_menu);
 			script_reportsrc(st);
 		}
-	}
-	else if( sd->npc_menu == 0xff )
-	{// Cancel was pressed
+	} else if( sd->npc_menu == 0xff ) {// Cancel was pressed
 		sd->state.menu_or_input = 0;
 		st->state = END;
-	}
-	else
-	{// return selected option
+	} else {// return selected option
 		int menu = 0;
 
 		sd->state.menu_or_input = 0;
-		for( i = 2; i <= script_lastdata(st); ++i )
-		{
+		for( i = 2; i <= script_lastdata(st); ++i ) {
 			text = script_getstr(st, i);
 			sd->npc_menu -= menu_countoptions(text, sd->npc_menu, &menu);
 			if( sd->npc_menu <= 0 )
@@ -4419,7 +4699,20 @@ BUILDIN_FUNC(prompt)
 
 		st->state = RERUNLINE;
 		sd->state.menu_or_input = 1;
-		clif_scriptmenu(sd, st->oid, StringBuf_Value(&buf));
+		
+		/**
+		 * menus beyond this length crash the client (see bugreport:6402)
+		 **/
+		if( StringBuf_Length(&buf) >= 2047 ) {
+			struct npc_data * nd = map_id2nd(st->oid);
+			char* menu;
+			CREATE(menu, char, 2048);
+			safestrncpy(menu, StringBuf_Value(&buf), 2047);
+			ShowWarning("NPC Menu too long! (source:%s / length:%d)\n",nd?nd->name:"Unknown",StringBuf_Length(&buf));
+			clif_scriptmenu(sd, st->oid, menu);
+			aFree(menu);
+		} else
+			clif_scriptmenu(sd, st->oid, StringBuf_Value(&buf));
 		StringBuf_Destroy(&buf);
 
 		if( sd->npc_menu >= 0xff )
@@ -7032,6 +7325,37 @@ BUILDIN_FUNC(repair)
 }
 
 /*==========================================
+ * repairall
+ *------------------------------------------*/
+BUILDIN_FUNC(repairall)
+{
+	int i, repaircounter = 0;
+	TBL_PC *sd;
+
+	sd = script_rid2sd(st);
+	if(sd == NULL)
+		return 0;
+
+	for(i = 0; i < MAX_INVENTORY; i++)
+	{
+		if(sd->status.inventory[i].nameid && sd->status.inventory[i].attribute)
+		{
+			sd->status.inventory[i].attribute = 0;
+			clif_produceeffect(sd,0,sd->status.inventory[i].nameid);
+			repaircounter++;
+		}
+	}
+
+	if(repaircounter)
+	{
+		clif_misceffect(&sd->bl, 3);
+		clif_equiplist(sd);
+	}
+
+	return 0;
+}
+
+/*==========================================
  * 装備チェック
  *------------------------------------------*/
 BUILDIN_FUNC(getequipisequiped)
@@ -8604,7 +8928,12 @@ BUILDIN_FUNC(donpcevent)
 {
 	const char* event = script_getstr(st,2);
 	check_event(st, event);
-	npc_event_do(event);
+	if( !npc_event_do(event) ) {
+		struct npc_data * nd = map_id2nd(st->oid);
+		ShowDebug("NPCEvent '%s' not found! (source: %s)\n",event,nd?nd->name:"Unknown");
+		script_pushint(st, 0);
+	} else
+		script_pushint(st, 1);
 	return 0;
 }
 
@@ -9578,7 +9907,7 @@ BUILDIN_FUNC(homunculus_mutate)
 		m_class = hom_class2mapid(sd->hd->homunculus.class_);
 		m_id    = hom_class2mapid(homun_id);
 		
-		if ( m_class&HOM_EVO && m_id&HOM_S && sd->hd->homunculus.level >= 99 )
+		if ( m_class != -1 && m_id != -1 && m_class&HOM_EVO && m_id&HOM_S && sd->hd->homunculus.level >= 99 )
 			hom_mutate(sd->hd, homun_id);
 		else
 			clif_emotion(&sd->hd->bl, E_SWT);
@@ -11252,7 +11581,7 @@ BUILDIN_FUNC(getitemslots)
 	return 0;
 }
 
-// TODO: add matk here if needed/once we get rid of REMODE
+// TODO: add matk here if needed/once we get rid of RENEWAL
 
 /*==========================================
  * Returns some values of an item [Lupus]
@@ -11965,20 +12294,21 @@ BUILDIN_FUNC(specialeffect2)
  *------------------------------------------*/
 BUILDIN_FUNC(nude)
 {
-	TBL_PC *sd=script_rid2sd(st);
-	int i,calcflag=0;
+	TBL_PC *sd = script_rid2sd(st);
+	int i, calcflag = 0;
 
-	if(sd==NULL)
+	if( sd == NULL )
 		return 0;
 
-	for(i=0;i<11;i++)
-		if(sd->equip_index[i] >= 0) {
-			if(!calcflag)
-				calcflag=1;
-			pc_unequipitem(sd,sd->equip_index[i],2);
+	for( i = 0 ; i < EQI_MAX; i++ ) {
+		if( sd->equip_index[ i ] >= 0 ) {
+			if( !calcflag )
+				calcflag = 1;
+			pc_unequipitem( sd , sd->equip_index[ i ] , 2);
 		}
+	}
 
-	if(calcflag)
+	if( calcflag )
 		status_calc_pc(sd,0);
 
 	return 0;
@@ -13614,9 +13944,8 @@ BUILDIN_FUNC(replacestr)
 	}
 
 	if(script_hasdata(st, 6)) {
-		if(script_isint(st,6))
-			count = script_getnum(st, 6);
-		else {
+		count = script_getnum(st, 6);
+		if(count == 0) {
 			ShowError("script:replacestr: Invalid count value. Expected int got string\n");
 			st->state = END;
 			return 1;
@@ -13923,6 +14252,7 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 
 	// Execute the query
 	query = script_getstr(st,2);
+
 	if( SQL_ERROR == Sql_QueryStr(handle, query) )
 	{
 		Sql_ShowDebug(handle);
@@ -13977,24 +14307,43 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 	// Free data
 	Sql_FreeResult(handle);
 	script_pushint(st, i);
+		
 	return 0;
 }
 
-BUILDIN_FUNC(query_sql)
-{
+BUILDIN_FUNC(query_sql) {
+#ifdef BETA_THREAD_TEST
+	if( st->state != RERUNLINE ) {
+		queryThread_add(st,false);
+
+		st->state = RERUNLINE;/* will continue when the query is finished running. */
+	} else
+		st->state = RUN;
+		
+	return 0;
+#else
 	return buildin_query_sql_sub(st, mmysql_handle);
+#endif
 }
 
-BUILDIN_FUNC(query_logsql)
-{
-	if( !log_config.sql_logs )
-	{// logmysql_handle == NULL
+BUILDIN_FUNC(query_logsql) {
+	if( !log_config.sql_logs ) {// logmysql_handle == NULL
 		ShowWarning("buildin_query_logsql: SQL logs are disabled, query '%s' will not be executed.\n", script_getstr(st,2));
 		script_pushint(st,-1);
 		return 1;
 	}
-
+#ifdef BETA_THREAD_TEST
+	if( st->state != RERUNLINE ) {
+		queryThread_add(st,true);
+		
+		st->state = RERUNLINE;/* will continue when the query is finished running. */
+	} else
+		st->state = RUN;
+	
+	return 0;	
+#else
 	return buildin_query_sql_sub(st, logmysql_handle);
+#endif
 }
 
 //Allows escaping of a given string.
@@ -16355,52 +16704,90 @@ BUILDIN_FUNC(freeloop) {
 /**
  * @commands (script based)
  **/
-BUILDIN_FUNC(bindatcmd)
-{
+BUILDIN_FUNC(bindatcmd) {
 	const char* atcmd;
 	const char* eventName;
-	int i = 0, level = 0, level2 = 0;
-
+	int i, level = 0, level2 = 0;
+	bool create = false;
+	
 	atcmd = script_getstr(st,2);
 	eventName = script_getstr(st,3);
 
+	if( *atcmd == atcommand_symbol || *atcmd == charcommand_symbol )
+		atcmd++;
+	
 	if( script_hasdata(st,4) ) level = script_getnum(st,4);
 	if( script_hasdata(st,5) ) level2 = script_getnum(st,5);
 
-	// check if event is already binded
-	ARR_FIND(0, MAX_ATCMD_BINDINGS, i, strcmp(atcmd_binding[i].command,atcmd) == 0);
-	if( i < MAX_ATCMD_BINDINGS )
-	{
-		safestrncpy(atcmd_binding[i].npc_event, eventName, 50);
-		atcmd_binding[i].level = level;
-		atcmd_binding[i].level2 = level2;
+	if( atcmd_binding_count == 0 ) {
+		CREATE(atcmd_binding,struct atcmd_binding_data*,1);
+		
+		create = true;
+	} else {
+		ARR_FIND(0, atcmd_binding_count, i, strcmp(atcmd_binding[i]->command,atcmd) == 0);
+		if( i < atcmd_binding_count ) {/* update existent entry */
+			safestrncpy(atcmd_binding[i]->npc_event, eventName, 50);
+			atcmd_binding[i]->level = level;
+			atcmd_binding[i]->level2 = level2;
+		} else
+			create = true;
 	}
-	else
-	{ // make new binding
-		ARR_FIND(0, MAX_ATCMD_BINDINGS, i, atcmd_binding[i].command[0] == '\0');
-		if( i < MAX_ATCMD_BINDINGS )
-		{
-			safestrncpy(atcmd_binding[i].command, atcmd, 50);
-			safestrncpy(atcmd_binding[i].npc_event, eventName, 50);
-			atcmd_binding[i].level = level;
-			atcmd_binding[i].level2 = level2;
-		}
+	
+	if( create ) {
+		i = atcmd_binding_count;
+		
+		if( atcmd_binding_count++ != 0 )
+			RECREATE(atcmd_binding,struct atcmd_binding_data*,atcmd_binding_count);
+		
+		CREATE(atcmd_binding[i],struct atcmd_binding_data,1);
+		
+		safestrncpy(atcmd_binding[i]->command, atcmd, 50);
+		safestrncpy(atcmd_binding[i]->npc_event, eventName, 50);
+		atcmd_binding[i]->level = level;
+		atcmd_binding[i]->level2 = level2;
 	}
-
+	
 	return 0;
 }
 
-BUILDIN_FUNC(unbindatcmd)
-{
+BUILDIN_FUNC(unbindatcmd) {
 	const char* atcmd;
 	int i =  0;
 
 	atcmd = script_getstr(st, 2);
 
-	ARR_FIND(0, MAX_ATCMD_BINDINGS, i, strcmp(atcmd_binding[i].command, atcmd) == 0);
-	if( i < MAX_ATCMD_BINDINGS )
-		memset(&atcmd_binding[i],0,sizeof(atcmd_binding[0]));
+	if( *atcmd == atcommand_symbol || *atcmd == charcommand_symbol )
+		atcmd++;
+	
+	if( atcmd_binding_count == 0 ) {
+		script_pushint(st, 0);
+		return 0;
+	}
+	
+	ARR_FIND(0, atcmd_binding_count, i, strcmp(atcmd_binding[i]->command, atcmd) == 0);
+	if( i < atcmd_binding_count ) {
+		int cursor = 0;
+		aFree(atcmd_binding[i]);
+		atcmd_binding[i] = NULL;
+		/* compact the list now that we freed a slot somewhere */
+		for( i = 0, cursor = 0; i < atcmd_binding_count; i++ ) {
+			if( atcmd_binding[i] == NULL )
+				continue;
+			
+			if( cursor != i ) {
+				memmove(&atcmd_binding[cursor], &atcmd_binding[i], sizeof(struct atcmd_binding_data*));
+			}
+			
+			cursor++;
+		}
 
+		if( (atcmd_binding_count = cursor) == 0 )
+			aFree(atcmd_binding);
+				
+		script_pushint(st, 1);
+	} else
+		script_pushint(st, 0);/* not found */
+	
 	return 0;
 }
 
@@ -16507,7 +16894,6 @@ BUILDIN_FUNC(checkre)
 				script_pushint(st, 0);
 			#endif
 			break;
-
 		default:
 			ShowWarning("buildin_checkre: unknown parameter.\n");
 			break;
@@ -16591,6 +16977,7 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(getequipname,"i"),
 	BUILDIN_DEF(getbrokenid,"i"), // [Valaris]
 	BUILDIN_DEF(repair,"i"), // [Valaris]
+	BUILDIN_DEF(repairall,""),
 	BUILDIN_DEF(getequipisequiped,"i"),
 	BUILDIN_DEF(getequipisenableref,"i"),
 	BUILDIN_DEF(getequipisidentify,"i"),

@@ -7,7 +7,7 @@
 #include "../common/db.h"
 #include "../common/malloc.h"
 #include "../common/random.h"
-#include "unit.h"
+
 #include "map.h"
 #include "path.h"
 #include "pc.h"
@@ -23,6 +23,7 @@
 #include "npc.h"
 #include "guild.h"
 #include "status.h"
+#include "unit.h"
 #include "battle.h"
 #include "battleground.h"
 #include "chat.h"
@@ -612,7 +613,10 @@ int unit_movepos(struct block_list *bl, short dst_x, short dst_y, int easy, bool
 	if( checkpath && (map_getcell(bl->m,dst_x,dst_y,CELL_CHKNOPASS) || !path_search(NULL,bl->m,bl->x,bl->y,dst_x,dst_y,easy,CELL_CHKNOREACH)) )
 		return 0; // unreachable
 
-	dir = map_calc_dir(bl, dst_x,dst_y);
+	ud->to_x = dst_x;
+	ud->to_y = dst_y;
+
+	dir = map_calc_dir(bl, dst_x, dst_y);
 	ud->dir = dir;
 
 	dx = dst_x - bl->x;
@@ -682,8 +686,7 @@ uint8 unit_getdir(struct block_list *bl)
 //  &1  Do not send position update packets.
 int unit_blown(struct block_list* bl, int dx, int dy, int count, int flag)
 {
-	if(count)
-	{
+	if(count) {
 		struct map_session_data* sd;
 		struct skill_unit* su = NULL;
 		int nx, ny, result;
@@ -696,46 +699,40 @@ int unit_blown(struct block_list* bl, int dx, int dy, int count, int flag)
 		nx = result>>16;
 		ny = result&0xffff;
 
-		if(!su)
-		{
+		if(!su) {
 			unit_stop_walking(bl, 0);
 		}
-
+	
+		if( sd ) {
+			sd->ud.to_x = nx;
+			sd->ud.to_y = ny;
+		}
+		
 		dx = nx-bl->x;
 		dy = ny-bl->y;
 
-		if(dx || dy)
-		{
+		if(dx || dy) {
 			map_foreachinmovearea(clif_outsight, bl, AREA_SIZE, dx, dy, bl->type == BL_PC ? BL_ALL : BL_PC, bl);
 
-			if(su)
-			{
+			if(su) {
 				skill_unit_move_unit_group(su->group, bl->m, dx, dy);
-			}
-			else
-			{
+			} else {
 				map_moveblock(bl, nx, ny, gettick());
 			}
 
 			map_foreachinmovearea(clif_insight, bl, AREA_SIZE, -dx, -dy, bl->type == BL_PC ? BL_ALL : BL_PC, bl);
 
-			if(!(flag&1))
-			{
+			if(!(flag&1)) {
 				clif_blown(bl);
 			}
 
-			if(sd)
-			{
-				if(sd->touching_id)
-				{
+			if(sd) {
+				if(sd->touching_id) {
 					npc_touchnext_areanpc(sd, false);
 				}
-				if(map_getcell(bl->m, bl->x, bl->y, CELL_CHKNPC))
-				{
+				if(map_getcell(bl->m, bl->x, bl->y, CELL_CHKNPC)) {
 					npc_touch_areanpc(sd, bl->m, bl->x, bl->y);
-				}
-				else
-				{
+				} else {
 					sd->areanpc_id = 0;
 				}
 			}
@@ -928,6 +925,8 @@ int unit_can_move(struct block_list *bl)
 																	(sc->data[SC_DANCING]->val1&0xFFFF) == CG_MOONLIT ||
 																	(sc->data[SC_DANCING]->val1&0xFFFF) == CG_HERMODE
 																	) )
+			|| (sc->data[SC_CLOAKING] && //Need wall at level 1-2
+				sc->data[SC_CLOAKING]->val1 < 3 && !(sc->data[SC_CLOAKING]->val4&1))
 			)
 			return 0;
 		
@@ -1253,11 +1252,11 @@ int unit_skilluse_id2(struct block_list *src, int target_id, short skill_num, sh
 	// moved here to prevent Suffragium from ending if skill fails
 	if (!(skill_get_castnodex(skill_num, skill_lv)&2)) 
 		casttime = skill_castfix_sc(src, casttime, skill_num, skill_lv);
-
+	// in official this is triggered even if no cast time.
+	clif_skillcasting(src, src->id, target_id, 0,0, skill_num, skill_get_ele(skill_num, skill_lv), casttime);
 	if( casttime > 0 || temp )
 	{ 
 		unit_stop_walking(src,1);
-		clif_skillcasting(src, src->id, target_id, 0,0, skill_num, skill_get_ele(skill_num, skill_lv), casttime);
 
 		if (sd && target->type == BL_MOB)
 		{
@@ -1318,8 +1317,7 @@ int unit_skilluse_id2(struct block_list *src, int target_id, short skill_num, sh
 		} else if( sc->data[SC_CLOAKINGEXCEED] && !(sc->data[SC_CLOAKINGEXCEED]->val4&4) && skill_num != GC_CLOAKINGEXCEED ) {
 			status_change_end(src,SC_CLOAKINGEXCEED, INVALID_TIMER);
 			if (!src->prev) return 0;
-		} else if( sc->data[SC_CAMOUFLAGE] && skill_num != RA_CAMOUFLAGE )
-			status_change_end(src,SC_CAMOUFLAGE,INVALID_TIMER);
+		}
 	}
 
 
@@ -1440,13 +1438,13 @@ int unit_skilluse_pos2( struct block_list *src, short skill_x, short skill_y, sh
 		} else if (sc->data[SC_CLOAKINGEXCEED] && !(sc->data[SC_CLOAKINGEXCEED]->val4&4)) {
 			status_change_end(src, SC_CLOAKINGEXCEED, INVALID_TIMER);
 			if (!src->prev) return 0;
-		} else if( sc->data[SC_CAMOUFLAGE] && skill_num != RA_CAMOUFLAGE )
-			status_change_end(src,SC_CAMOUFLAGE,INVALID_TIMER);
+		}
 	}
+	// in official this is triggered even if no cast time.
+	clif_skillcasting(src, src->id, 0, skill_x, skill_y, skill_num, skill_get_ele(skill_num, skill_lv), casttime);
 	if( casttime > 0 )
 	{
 		unit_stop_walking(src,1);
-		clif_skillcasting(src, src->id, 0, skill_x, skill_y, skill_num, skill_get_ele(skill_num, skill_lv), casttime);
 		ud->skilltimer = add_timer( tick+casttime, skill_castend_pos, src->id, 0 );
 		if( (sd && pc_checkskill(sd,SA_FREECAST) > 0) || skill_num == LG_EXEEDBREAK)
 			status_calc_bl(&sd->bl, SCB_SPEED);
@@ -2232,6 +2230,7 @@ int unit_free(struct block_list *bl, clr_type clrtype)
 		case BL_PC:
 		{
 			struct map_session_data *sd = (struct map_session_data*)bl;
+			int i;
 
 			if( status_isdead(bl) )
 				pc_setrestartvalue(sd,2);
@@ -2254,15 +2253,15 @@ int unit_free(struct block_list *bl, clr_type clrtype)
 			pc_cleareventtimer(sd);
 			pc_inventory_rental_clear(sd);
 			pc_delspiritball(sd,sd->spiritball,1);
+			for(i = 1; i < 5; i++)
+				pc_del_talisman(sd, sd->talisman[i], i);
 
-			if( sd->reg )
-			{	//Double logout already freed pointer fix... [Skotlex]
+			if( sd->reg ) {	//Double logout already freed pointer fix... [Skotlex]
 				aFree(sd->reg);
 				sd->reg = NULL;
 				sd->reg_num = 0;
 			}
-			if( sd->regstr )
-			{
+			if( sd->regstr ) {
 				int i;
 				for( i = 0; i < sd->regstr_num; ++i )
 					if( sd->regstr[i].data )
@@ -2271,11 +2270,15 @@ int unit_free(struct block_list *bl, clr_type clrtype)
 				sd->regstr = NULL;
 				sd->regstr_num = 0;
 			}
-			if( sd->st && sd->st->state != RUN )
-			{// free attached scripts that are waiting
+			if( sd->st && sd->st->state != RUN ) {// free attached scripts that are waiting
 				script_free_state(sd->st);
 				sd->st = NULL;
 				sd->npc_id = 0;
+			}
+			if( sd->combos.count ) {
+				aFree(sd->combos.bonus);
+				aFree(sd->combos.id);
+				sd->combos.count = 0;
 			}
 			break;
 		}
