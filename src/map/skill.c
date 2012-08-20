@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 
 #define SKILLUNITTIMER_INTERVAL	100
@@ -3182,7 +3183,15 @@ static int skill_timerskill(int tid, unsigned int tick, int id, intptr_t data)
 				case GN_SPORE_EXPLOSION:
 					map_foreachinrange(skill_area_sub, target, skill_get_splash(skl->skill_id, skl->skill_lv), BL_CHAR,
 									   src, skl->skill_id, skl->skill_lv, 0, skl->flag|1|BCT_ENEMY, skill_castend_damage_id);
-					break;					
+					break;	
+				case CH_PALMSTRIKE:
+					{
+						struct status_change* tsc = status_get_sc(target);
+						if( tsc && tsc->option&OPTION_HIDE ){
+							skill_blown(src,target,skill_get_blewcount(skl->skill_id, skl->skill_lv), -1, 0x0 );
+							break;
+						}
+					}
 				default:
 					skill_attack(skl->type,src,src,target,skl->skill_id,skl->skill_lv,tick,skl->flag);
 					break;
@@ -5906,7 +5915,7 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, in
 
 	case BS_REPAIRWEAPON:
 		if(sd && dstsd)
-			clif_item_repair_list(sd,dstsd);
+			clif_item_repair_list(sd,dstsd,skilllv);
 		break;
 
 	case MC_IDENTIFY:
@@ -7162,15 +7171,14 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, in
 		break;
 
 	case GS_CRACKER:
-		if (!dstsd)	// according to latest patch, should not work on players [Reddozen]
+		/* per official standards, this skill works on players and mobs. */
+		if (sd && (dstsd || dstmd))
 		{
 			i =65 -5*distance_bl(src,bl); //Base rate
 			if (i < 30) i = 30;
 			clif_skill_nodamage(src,bl,skillid,skilllv,1);
 			sc_start(bl,SC_STUN, i,skilllv,skill_get_time2(skillid,skilllv));
 		}
-		else if (sd)
-			clif_skill_fail(sd,skillid,USESKILL_FAIL_LEVEL,0);
 		break;
 
 	case AM_CALLHOMUN:	//[orn]
@@ -8760,7 +8768,7 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, in
 				if (unit_movepos(bl,x,y,0,0))
 				{
 					clif_skill_damage(bl,bl,tick, status_get_amotion(src), 0, -30000, 1, skillid, -1, 6);
-					if( sd && pc_issit(sd))
+					if( bl->type == BL_PC && pc_issit((TBL_PC*)bl))
 						clif_sitting(bl); //Avoid sitting sync problem
 					clif_slide(bl,x,y) ;
 					sc_start(bl,SC_CONFUSION,80,skilllv,skill_get_time(skillid,skilllv));
@@ -13354,12 +13362,12 @@ int skill_castfix (struct block_list *bl, int skill_id, int skill_lv)
 
 	nullpo_ret(bl);
 	sd = BL_CAST(BL_PC, bl);
-
+#ifndef RENEWAL_CAST
 	// calculate base cast time (reduced by dex)
 	if( !(skill_get_castnodex(skill_id, skill_lv)&1) ) {
-		int scale = CONST_CASTRATE_SCALE - CONST_CASTRATE_CALC;
+		int scale = battle_config.castrate_dex_scale - status_get_dex(bl);
 		if( scale > 0 )	// not instant cast
-			time = time * scale / CONST_CASTRATE_SCALE;
+			time = time * scale / battle_config.castrate_dex_scale;
 		else
 			return 0;	// instant cast
 	}
@@ -13379,6 +13387,7 @@ int skill_castfix (struct block_list *bl, int skill_id, int skill_lv)
 			}
 		}
 	}
+#endif
 	// config cast time multiplier
 	if (battle_config.cast_rate != 100)
 		time = time * battle_config.cast_rate / 100;
@@ -13389,69 +13398,116 @@ int skill_castfix (struct block_list *bl, int skill_id, int skill_lv)
 /*==========================================
  * Does cast-time reductions based on sc data.
  *------------------------------------------*/
-int skill_castfix_sc (struct block_list *bl, int time, int skill_id, int skill_lv) {
+int skill_castfix_sc (struct block_list *bl, int time)
+{
 	struct status_change *sc = status_get_sc(bl);
-#ifdef RENEWAL_CAST
-	struct map_session_data *sd = BL_CAST(BL_PC,bl);
-	int fixed = skill_get_fixed_cast(skill_id, skill_lv);
-	if( !fixed ) {
-		fixed = skill_get_cast(skill_id, skill_lv);
-		fixed = ( fixed > 1 ? ( fixed * 20 / 100 ) : 0 );
-	}
-	if(sd){// Increases/Decreases fixed cast time of a skill by item/card bonuses.
-		int i;
-		if( sd->fixcastrate != 100 )
-			fixed = fixed * sd->fixcastrate / 100;
-		for (i = 0; i < ARRAYLENGTH(sd->skillfixcast) && sd->skillfixcast[i].id; i++) { 
-			if (sd->skillfixcast[i].id == skill_id){
-				fixed += sd->skillfixcast[i].val;
-				break;
-			}
-		}
-	}
-#endif
-	if( time < 0 ) return 0; // due to fixed castime so use -1 to nullify the casting. [malufett]
+
+	if( time < 0 )
+		return 0;
+
 	if (sc && sc->count) {
 		if (sc->data[SC_SLOWCAST])
 			time += time * sc->data[SC_SLOWCAST]->val2 / 100;
 		if (sc->data[SC_SUFFRAGIUM]) {
 			time -= time * sc->data[SC_SUFFRAGIUM]->val2 / 100;
-			status_change_end(bl, SC_SUFFRAGIUM, INVALID_TIMER);
+			status_change_end(bl, SC_SUFFRAGIUM, -1);
 		}
 		if (sc->data[SC_MEMORIZE]) {
 			time>>=1;
 			if ((--sc->data[SC_MEMORIZE]->val2) <= 0)
+				status_change_end(bl, SC_MEMORIZE, -1);
+		}
+		if (sc->data[SC_POEMBRAGI])
+			time -= time * sc->data[SC_POEMBRAGI]->val2 / 100;		
+		if (sc->data[SC_IZAYOI])
+			time -= time * 50 / 100;
+	}
+
+	return (time > 0) ? time : 0;
+}
+#ifdef RENEWAL_CAST
+int skill_vfcastfix (struct block_list *bl, double time, int skill_id, int skill_lv)
+{
+	struct status_change *sc = status_get_sc(bl);
+	struct map_session_data *sd = BL_CAST(BL_PC,bl);
+	int fixed = skill_get_fixed_cast(skill_id, skill_lv), fixcast_r = 0, varcast_r = 0, i = 0;
+
+	if( time < 0 )
+		return 0;
+
+	if( !fixed )
+		fixed = (int)time * 20 / 100; // fixed time
+	time = time * 80 / 100; // variable time
+	
+	if(sd  && !(skill_get_castnodex(skill_id, skill_lv)&4) ){ // Increases/Decreases fixed/variable cast time of a skill by item/card bonuses.
+		if( sd->bonus.varcastrate < 0 )
+			VARCAST_REDUCTION(sd->bonus.varcastrate);
+		for (i = 0; i < ARRAYLENGTH(sd->skillfixcast) && sd->skillfixcast[i].id; i++) 
+			if (sd->skillfixcast[i].id == skill_id){ // bonus2 bSkillFixedCast
+				fixed += sd->skillfixcast[i].val;
+				break;
+			}
+		for( i = 0; i < ARRAYLENGTH(sd->skillvarcast) && sd->skillvarcast[i].id; i++ )
+			if( sd->skillvarcast[i].id == skill_id ){ // bonus2 bSkillVariableCast
+				time += sd->skillvarcast[i].val;
+				break;
+			}
+		for( i = 0; i < ARRAYLENGTH(sd->skillcast) && sd->skillcast[i].id; i++ )
+			if( sd->skillcast[i].id == skill_id ){ // bonus2 bVariableCastrate
+				if( (i=sd->skillcast[i].val) < 0)
+					VARCAST_REDUCTION(i);
+				break;
+			}
+	}
+
+	if (sc && sc->count && !(skill_get_castnodex(skill_id, skill_lv)&2) ) {
+		// All variable cast additive bonuses must come first
+		if (sc->data[SC_SLOWCAST])
+			VARCAST_REDUCTION(-sc->data[SC_SLOWCAST]->val2);
+
+		// Variable cast reduction bonuses
+		if (sc->data[SC_SUFFRAGIUM]) {
+			VARCAST_REDUCTION(sc->data[SC_SUFFRAGIUM]->val2);
+			status_change_end(bl, SC_SUFFRAGIUM, INVALID_TIMER);
+		}
+		if (sc->data[SC_MEMORIZE]) {
+			VARCAST_REDUCTION(50);
+			if ((--sc->data[SC_MEMORIZE]->val2) <= 0)
 				status_change_end(bl, SC_MEMORIZE, INVALID_TIMER);
 		}
 		if (sc->data[SC_POEMBRAGI])
-			time -= time * sc->data[SC_POEMBRAGI]->val2 / 100;
+			VARCAST_REDUCTION(sc->data[SC_POEMBRAGI]->val2);
 		if (sc->data[SC_IZAYOI])
-			time -= time * 50 / 100;
-#ifdef RENEWAL_CAST
+			VARCAST_REDUCTION(50);
+		// Fixed cast reduction bonuses
 		if( sc->data[SC__LAZINESS] )
-			fixed += fixed * sc->data[SC__LAZINESS]->val2 / 100;
-		/**
-		 * AB Sacrament reduces fixed cast time by (10 x Level)% (up to 50%)
-		 **/
+			fixcast_r = max(fixcast_r, sc->data[SC__LAZINESS]->val2);
 		if( sc->data[SC_SECRAMENT] )
-			fixed -= fixed * sc->data[SC_SECRAMENT]->val2 / 100;
+			fixcast_r = max(fixcast_r, sc->data[SC_SECRAMENT]->val2);
+		if( sd && ( skill_lv = pc_checkskill(sd, WL_RADIUS) ) && skill_id >= WL_WHITEIMPRISON && skill_id <= WL_FREEZE_SP  )
+			fixcast_r = max(fixcast_r, 5 + skill_lv * 5);
+		// Fixed cast non percentage bonuses
 		if( sc->data[SC_MANDRAGORA] && (skill_id >= SM_BASH && skill_id <= RETURN_TO_ELDICASTES) )
 			fixed += 2000;
 		if (sc->data[SC_IZAYOI]  && (skill_id >= NJ_TOBIDOUGU && skill_id <= NJ_ISSEN))
 			fixed = 0;
-#endif
 	}
-#ifdef RENEWAL_CAST
-	/**
-	 * WL_RADIUS decreases 10/15/20% fixed cast time from warlock skills
-	 **/
-	if( sd && skill_id >= WL_WHITEIMPRISON && skill_id <= WL_FREEZE_SP && ( skill_lv = pc_checkskill(sd, WL_RADIUS) ) )
-		fixed -= fixed * (5+(skill_lv*5)) / 100;
-	return (time > 0 || fixed > 0) ? cap_value( time , fixed , INT_MAX ) : 0;
-#else
-	return (time > 0) ? time : 0;
-#endif
+
+	if( sd && !(skill_get_castnodex(skill_id, skill_lv)&4) ){
+		VARCAST_REDUCTION( max(sd->bonus.varcastrate, 0) + max(i, 0) );
+		fixcast_r = max(fixcast_r, sd->bonus.fixcastrate) + min(sd->bonus.fixcastrate,0);
+	}
+
+	if( varcast_r < 0 ) // now compute overall factors
+		time = time * (1 - (float)varcast_r / 100);
+	if( !(skill_get_castnodex(skill_id, skill_lv)&1) )// reduction from status point
+		time = (1 - sqrt( ((float)(status_get_dex(bl)*2 + status_get_int(bl)) / battle_config.vcast_stat_scale) )) * time;
+	// underflow checking/capping
+	time = max(time, 0) + (1 - (float)min(fixcast_r, 100) / 100) * fixed;
+
+	return (int)time;
 }
+#endif
 
 /*==========================================
  * Does delay reductions based on dex/agi, sc data, item bonuses, ...
@@ -13725,45 +13781,51 @@ void skill_brandishspear(struct block_list* src, struct block_list* bl, int skil
 /*==========================================
  * Weapon Repair [Celest/DracoRPG]
  *------------------------------------------*/
-void skill_repairweapon (struct map_session_data *sd, int idx)
-{
+void skill_repairweapon (struct map_session_data *sd, int idx) {
 	int material;
 	int materials[4] = { 1002, 998, 999, 756 };
 	struct item *item;
 	struct map_session_data *target_sd;
 
 	nullpo_retv(sd);
-	target_sd = map_id2sd(sd->menuskill_val);
-	if (!target_sd) //Failed....
+
+	if ( !( target_sd = map_id2sd(sd->menuskill_val) ) ) //Failed....
 		return;
-	if(idx==0xFFFF) // No item selected ('Cancel' clicked)
+	
+	if( idx == 0xFFFF ) // No item selected ('Cancel' clicked)
 		return;
-	if(idx < 0 || idx >= MAX_INVENTORY)
+	if( idx < 0 || idx >= MAX_INVENTORY )
 		return; //Invalid index??
 
 	item = &target_sd->status.inventory[idx];
-	if(item->nameid <= 0 || item->attribute == 0)
+	if( item->nameid <= 0 || item->attribute == 0 )
 		return; //Again invalid item....
 
-	if(sd!=target_sd && !battle_check_range(&sd->bl,&target_sd->bl,skill_get_range2(&sd->bl, sd->menuskill_id,pc_checkskill(sd, sd->menuskill_id)))){
+	if( sd != target_sd && !battle_check_range(&sd->bl,&target_sd->bl, skill_get_range2(&sd->bl, sd->menuskill_id,sd->menuskill_val2) ) ){
 		clif_item_repaireffect(sd,idx,1);
 		return;
 	}
 
-	if ( sd->inventory_data[idx]->type == IT_WEAPON)
-		material = materials [itemdb_wlv(item->nameid)-1]; // Lv1/2/3/4 weapons consume 1 Iron Ore/Iron/Steel/Rough Oridecon
+	if ( target_sd->inventory_data[idx]->type == IT_WEAPON )
+		material = materials [ target_sd->inventory_data[idx]->wlv - 1 ]; // Lv1/2/3/4 weapons consume 1 Iron Ore/Iron/Steel/Rough Oridecon
 	else
 		material = materials [2]; // Armors consume 1 Steel
-	if (pc_search_inventory(sd,material) < 0 ) {
+	if ( pc_search_inventory(sd,material) < 0 ) {
 		clif_skill_fail(sd,sd->menuskill_id,USESKILL_FAIL_LEVEL,0);
 		return;
 	}
+	
 	clif_skill_nodamage(&sd->bl,&target_sd->bl,sd->menuskill_id,1,1);
-	item->attribute=0;
+	
+	item->attribute = 0;/* clear broken state */
+	
 	clif_equiplist(target_sd);
+	
 	pc_delitem(sd,pc_search_inventory(sd,material),1,0,0,LOG_TYPE_CONSUME);
+	
 	clif_item_repaireffect(sd,idx,0);
-	if(sd!=target_sd)
+	
+	if( sd != target_sd )
 		clif_item_repaireffect(target_sd,idx,0);
 }
 

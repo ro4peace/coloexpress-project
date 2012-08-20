@@ -42,6 +42,7 @@
 #include "trade.h"
 #include "unit.h"
 #include "mapreg.h"
+#include "quest.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1584,6 +1585,7 @@ ACMD_FUNC(baselevelup)
 	clif_updatestatus(sd, SP_BASEEXP);
 	clif_updatestatus(sd, SP_NEXTBASEEXP);
 	status_calc_pc(sd, 0);
+	pc_baselevelchanged(sd);
 	if(sd->status.party_id)
 		party_send_levelup(sd);
 	return 0;
@@ -2084,11 +2086,9 @@ ACMD_FUNC(go)
 	           strncmp(map_name, "prison", 3) == 0 ||
 	           strncmp(map_name, "jails", 3) == 0) {
 		town = 16;
-	} else if (strncmp(map_name, "jawaii", 3) == 0 ||
-	           strncmp(map_name, "jawai", 3) == 0) {
+	} else if (strncmp(map_name, "jawaii", 3) == 0) {
 		town = 17;
-	} else if (strncmp(map_name, "ayothaya", 3) == 0 ||
-	           strncmp(map_name, "ayotaya", 3) == 0) {
+	} else if (strncmp(map_name, "ayothaya", 3) == 0) {
 		town = 18;
 	} else if (strncmp(map_name, "einbroch", 5) == 0 ||
 	           strncmp(map_name, "ainbroch", 5) == 0) {
@@ -2119,9 +2119,9 @@ ACMD_FUNC(go)
 		town = 31;
 	} else if (strncmp(map_name, "dewata", 3) == 0) {
 		town = 32;
-	} else if (strncmp(map_name, "malangdo", 3) == 0) {
+	} else if (strncmp(map_name, "malangdo", 5) == 0) {
 		town = 33;
-	} else if (strncmp(map_name, "malaya", 3) == 0) {
+	} else if (strncmp(map_name, "malaya", 5) == 0) {
 		town = 34;
 	} else if (strncmp(map_name, "eclage", 3) == 0) {
 		town = 35;
@@ -5038,6 +5038,54 @@ ACMD_FUNC(disguiseall)
 }
 
 /*==========================================
+ * DisguiseGuild
+ *------------------------------------------*/
+ACMD_FUNC(disguiseguild)
+{
+	int id = 0, i;
+	char monster[NAME_LENGTH], guild[NAME_LENGTH];
+	struct map_session_data *pl_sd;
+	struct guild *g;
+
+	memset(monster, '\0', sizeof(monster));
+	memset(guild, '\0', sizeof(guild));
+
+	if( !message || !*message || sscanf(message, "%23[^,], %23[^\r\n]", monster, guild) < 2 ) {
+		clif_displaymessage(fd, "Please enter a mob name/id and guild name/id (usage: @disguiseguild <mob name/id>, <guild name/id>).");
+		return -1;
+	}
+
+	if( (id = atoi(monster)) > 0 ) {
+		if( !mobdb_checkid(id) && !npcdb_checkid(id) )
+			id = 0;
+	} else {
+		if( (id = mobdb_searchname(monster)) == 0 ) {
+			struct npc_data* nd = npc_name2id(monster);
+			if( nd != NULL )
+				id = nd->class_;
+		}
+	}
+
+	if( id == 0 ) {
+		clif_displaymessage(fd, msg_txt(123));	// Monster/NPC name/id hasn't been found.
+		return -1;
+	}
+
+	if( (g = guild_searchname(guild)) == NULL && (g = guild_search(atoi(guild))) == NULL ) {
+		clif_displaymessage(fd, msg_txt(94)); // Incorrect name/ID, or no one from the guild is online.
+		return -1;
+	}
+
+	for( i = 0; i < g->max_member; i++ )
+		if( (pl_sd = g->member[i].sd) && !pc_isriding(pl_sd) )
+			pc_disguise(pl_sd, id);
+
+	clif_displaymessage(fd, msg_txt(122)); // Disguise applied.
+	return 0;
+}
+
+
+/*==========================================
  * @undisguise by [Yor]
  *------------------------------------------*/
 ACMD_FUNC(undisguise)
@@ -5068,6 +5116,38 @@ ACMD_FUNC(undisguiseall)
 		if( pl_sd->disguise )
 			pc_disguise(pl_sd, 0);
 	mapit_free(iter);
+
+	clif_displaymessage(fd, msg_txt(124)); // Undisguise applied.
+
+	return 0;
+}
+
+/*==========================================
+ * UndisguiseGuild
+ *------------------------------------------*/
+ACMD_FUNC(undisguiseguild)
+{
+	char guild_name[NAME_LENGTH];
+	struct map_session_data *pl_sd;
+	struct guild *g;
+	int i;
+	nullpo_retr(-1, sd);
+	
+	memset(guild_name, '\0', sizeof(guild_name));
+	
+	if(!message || !*message || sscanf(message, "%23[^\n]", guild_name) < 1) {
+		clif_displaymessage(fd, "Please enter guild name/id (usage: @undisguiseguild <guild name/id>).");
+		return -1;
+	}
+
+	if( (g = guild_searchname(guild_name)) == NULL && (g = guild_search(atoi(message))) == NULL ) {
+		clif_displaymessage(fd, msg_txt(94)); // Incorrect name/ID, or no one from the guild is online.
+		return -1;
+	}
+	
+	for(i = 0; i < g->max_member; i++)
+		if( (pl_sd = g->member[i].sd) && pl_sd->disguise )
+			pc_disguise(pl_sd, 0);
 
 	clif_displaymessage(fd, msg_txt(124)); // Undisguise applied.
 
@@ -7458,24 +7538,94 @@ ACMD_FUNC(me)
  *------------------------------------------*/
 ACMD_FUNC(size)
 {
-	int size=0;
-
+	int size = 0;
 	nullpo_retr(-1, sd);
 
-	size = atoi(message);
+	size = cap_value(atoi(message),0,2);
+	
 	if(sd->state.size) {
-		sd->state.size=0;
+		sd->state.size = 0;
 		pc_setpos(sd, sd->mapindex, sd->bl.x, sd->bl.y, CLR_TELEPORT);
 	}
 
-	if(size==1) {
-		sd->state.size=1;
+	sd->state.size = size;
+	if( size == 1 )
 		clif_specialeffect(&sd->bl,420,AREA);
-	} else if(size==2) {
-		sd->state.size=2;
+	else if( size == 2 )
 		clif_specialeffect(&sd->bl,422,AREA);
+
+	clif_displaymessage(fd, "Size change applied.");
+	return 0;
+}
+
+ACMD_FUNC(sizeall)
+{
+	int size;
+	struct map_session_data *pl_sd;
+	struct s_mapiterator* iter;
+
+	size = atoi(message);
+	size = cap_value(size,0,2);
+
+	iter = mapit_getallusers();
+	for( pl_sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); pl_sd = (TBL_PC*)mapit_next(iter) ) {
+		if( pl_sd->state.size != size ) {
+			if( pl_sd->state.size ) {
+				pl_sd->state.size = 0;
+				pc_setpos(pl_sd, pl_sd->mapindex, pl_sd->bl.x, pl_sd->bl.y, CLR_TELEPORT);
+			}
+
+			pl_sd->state.size = size;
+			if( size == 1 )
+				clif_specialeffect(&pl_sd->bl,420,AREA);
+			else if( size == 2 )
+				clif_specialeffect(&pl_sd->bl,422,AREA);
+		}
+	}
+	mapit_free(iter);
+
+	clif_displaymessage(fd, "Size change applied.");
+	return 0;
+}
+
+ACMD_FUNC(sizeguild)
+{
+	int size = 0, i;
+	char guild[NAME_LENGTH];
+	struct map_session_data *pl_sd;
+	struct guild *g;
+	nullpo_retr(-1, sd);
+	
+	memset(guild, '\0', sizeof(guild));
+	
+	if( !message || !*message || sscanf(message, "%d %23[^\n]", &size, guild) < 2 ) {
+		clif_displaymessage(fd, "Please enter guild name/id (usage: @sizeguild <size> <guild name/id>).");
+		return -1;
 	}
 
+	if( (g = guild_searchname(guild)) == NULL && (g = guild_search(atoi(guild))) == NULL ) {
+		clif_displaymessage(fd, msg_txt(94)); // Incorrect name/ID, or no one from the guild is online.
+		return -1;
+	}
+	
+	size = cap_value(size,0,2);
+	
+	for( i = 0; i < g->max_member; i++ ) {
+		if( (pl_sd = g->member[i].sd) && pl_sd->state.size != size ) {
+			if( pl_sd->state.size ) {
+				pl_sd->state.size = 0;
+				pc_setpos(pl_sd, pl_sd->mapindex, pl_sd->bl.x, pl_sd->bl.y, CLR_TELEPORT);
+			}
+
+			pl_sd->state.size = size;
+			if( size == 1 )
+				clif_specialeffect(&pl_sd->bl,420,AREA);
+			else if( size == 2 )
+				clif_specialeffect(&pl_sd->bl,422,AREA);
+		}
+	}
+
+	clif_displaymessage(fd, "Size change applied.");
 	return 0;
 }
 
@@ -8625,7 +8775,85 @@ ACMD_FUNC(set) {
 	
 	return 0;
 }
+ACMD_FUNC(reloadquestdb) {
+	do_reload_quest();
+	clif_displaymessage(fd, "Quest DB has been reloaded");
+	return 0;
+}
+ACMD_FUNC(addperm) {
+	int perm_size = ARRAYLENGTH(pc_g_permission_name);
+	bool add = (strcmpi(command+1, "addperm") == 0) ? true : false;
+	int i;
+	
+	if( !message || !*message ) {
+		sprintf(atcmd_output,  "Usage: %s <permission_name>",command);
+		clif_displaymessage(fd, atcmd_output);
+		clif_displaymessage(fd, "-- Permission List");
+		for( i = 0; i < perm_size; i++ ) {
+			sprintf(atcmd_output,"- %s",pc_g_permission_name[i].name);
+			clif_displaymessage(fd, atcmd_output);
+		}
+		return -1;
+	}
+	
+	ARR_FIND(0, perm_size, i, strcmpi(pc_g_permission_name[i].name, message) == 0);
 
+	if( i == perm_size ) {
+		sprintf(atcmd_output,"'%s' is not a known permission",message);
+		clif_displaymessage(fd, atcmd_output);
+		clif_displaymessage(fd, "-- Permission List");
+		for( i = 0; i < perm_size; i++ ) {
+			sprintf(atcmd_output,"- %s",pc_g_permission_name[i].name);
+			clif_displaymessage(fd, atcmd_output);
+		}
+		return -1;
+	}
+	
+	if( add && (sd->permissions&pc_g_permission_name[i].permission) ) {
+		sprintf(atcmd_output,  "User '%s' already possesses the '%s' permission",sd->status.name,pc_g_permission_name[i].name);
+		clif_displaymessage(fd, atcmd_output);
+		return -1;
+	} else if ( !add && !(sd->permissions&pc_g_permission_name[i].permission) ) {
+		sprintf(atcmd_output,  "User '%s' doesn't possess the '%s' permission",sd->status.name,pc_g_permission_name[i].name);
+		clif_displaymessage(fd, atcmd_output);
+		sprintf(atcmd_output,"-- User '%s' Permissions",sd->status.name);
+		clif_displaymessage(fd, atcmd_output);
+		for( i = 0; i < perm_size; i++ ) {
+			if( sd->permissions&pc_g_permission_name[i].permission ) {
+				sprintf(atcmd_output,"- %s",pc_g_permission_name[i].name);
+				clif_displaymessage(fd, atcmd_output);
+			}
+		}
+		
+		return -1;		
+	}
+	
+	if( add )
+		sd->permissions |= pc_g_permission_name[i].permission;
+	else
+		sd->permissions &=~ pc_g_permission_name[i].permission;
+
+
+	sprintf(atcmd_output, "User '%s' permissions were updated successfully, be aware the changes are temporary.",sd->status.name);
+	clif_displaymessage(fd, atcmd_output);
+	
+	return 0;
+}
+ACMD_FUNC(unloadnpcfile) {
+	
+	if( !message || !*message ) {
+		clif_displaymessage(fd, "Usage: @unloadnpcfile <file name>");
+		return -1;
+	}
+	
+	if( npc_unloadfile(message) )
+		clif_displaymessage(fd, "File unloaded, be aware mapflags and monsters spawned directly are not removed");
+	else {
+		clif_displaymessage(fd, "File not found");
+		return -1;
+	}
+	return 0;
+}
 /**
  * Fills the reference of available commands in atcommand DBMap
  **/
@@ -8871,6 +9099,14 @@ void atcommand_basecommands(void) {
 		ACMD_DEF(font),
 		ACMD_DEF(accinfo),
 		ACMD_DEF(set),
+		ACMD_DEF(reloadquestdb),
+		ACMD_DEF(undisguiseguild),
+		ACMD_DEF(disguiseguild),
+		ACMD_DEF(sizeall),
+		ACMD_DEF(sizeguild),
+		ACMD_DEF(addperm),
+		ACMD_DEF2("rmvperm", addperm),
+		ACMD_DEF(unloadnpcfile),
 		/**
 		 * For Testing Purposes, not going to be here after we're done.
 		 **/

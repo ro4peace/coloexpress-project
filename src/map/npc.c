@@ -82,6 +82,17 @@ struct event_data {
 
 static struct eri *timer_event_ers; //For the npc timer data. [Skotlex]
 
+/* hello */
+static char *npc_last_path;
+static char *npc_last_ref;
+
+struct npc_path_data {
+	char* path;
+	unsigned short references;
+};
+struct npc_path_data *npc_last_npd;
+static DBMap *npc_path_db;
+
 //For holding the view data of npc classes. [Skotlex]
 static struct view_data npc_viewdb[MAX_NPC_CLASS];
 
@@ -1749,6 +1760,18 @@ int npc_unload(struct npc_data* nd, bool single) {
 	npc_chat_finalize(nd); // deallocate npc PCRE data structures
 #endif
 
+	if( single && nd->path ) {
+		struct npc_path_data* npd = NULL;
+		if( nd->path && nd->path != npc_last_ref ) {
+			npd = strdb_get(npc_path_db, nd->path);
+		}
+		
+		if( npd && --npd->references == 0 ) {
+			strdb_remove(npc_path_db, nd->path);/* remove from db */
+			aFree(nd->path);/* remove now that no other instances exist */
+		}
+	}
+	
 	if( (nd->subtype == SHOP || nd->subtype == CASHSHOP) && nd->src_id == 0) //src check for duplicate shops [Orcao]
 		aFree(nd->u.shop.shop_item);
 	else if( nd->subtype == SCRIPT ) {
@@ -1892,16 +1915,12 @@ static void npc_parsename(struct npc_data* nd, const char* name, const char* sta
 
 	// parse name
 	p = strstr(name,"::");
-	if( p )
-	{// <Display name>::<Unique name>
+	if( p ) { // <Display name>::<Unique name>
 		size_t len = p-name;
-		if( len > NAME_LENGTH )
-		{
+		if( len > NAME_LENGTH ) {
 			ShowWarning("npc_parsename: Display name of '%s' is too long (len=%u) in file '%s', line'%d'. Truncating to %u characters.\n", name, (unsigned int)len, filepath, strline(buffer,start-buffer), NAME_LENGTH);
 			safestrncpy(nd->name, name, sizeof(nd->name));
-		}
-		else
-		{
+		} else {
 			memcpy(nd->name, name, len);
 			memset(nd->name+len, 0, sizeof(nd->name)-len);
 		}
@@ -1909,9 +1928,7 @@ static void npc_parsename(struct npc_data* nd, const char* name, const char* sta
 		if( len > NAME_LENGTH )
 			ShowWarning("npc_parsename: Unique name of '%s' is too long (len=%u) in file '%s', line'%d'. Truncating to %u characters.\n", name, (unsigned int)len, filepath, strline(buffer,start-buffer), NAME_LENGTH);
 		safestrncpy(nd->exname, p+2, sizeof(nd->exname));
-	}
-	else
-	{// <Display name>
+	} else {// <Display name>
 		size_t len = strlen(name);
 		if( len > NAME_LENGTH )
 			ShowWarning("npc_parsename: Name '%s' is too long (len=%u) in file '%s', line'%d'. Truncating to %u characters.\n", name, (unsigned int)len, filepath, strline(buffer,start-buffer), NAME_LENGTH);
@@ -1919,25 +1936,21 @@ static void npc_parsename(struct npc_data* nd, const char* name, const char* sta
 		safestrncpy(nd->exname, name, sizeof(nd->exname));
 	}
 
-	if( *nd->exname == '\0' || strstr(nd->exname,"::") != NULL )
-	{// invalid
+	if( *nd->exname == '\0' || strstr(nd->exname,"::") != NULL ) {// invalid
 		snprintf(newname, ARRAYLENGTH(newname), "0_%d_%d_%d", nd->bl.m, nd->bl.x, nd->bl.y);
 		ShowWarning("npc_parsename: Invalid unique name in file '%s', line'%d'. Renaming '%s' to '%s'.\n", filepath, strline(buffer,start-buffer), nd->exname, newname);
 		safestrncpy(nd->exname, newname, sizeof(nd->exname));
 	}
 
-	if( (dnd=npc_name2id(nd->exname)) != NULL )
-	{// duplicate unique name, generate new one
+	if( (dnd=npc_name2id(nd->exname)) != NULL ) {// duplicate unique name, generate new one
 		char this_mapname[32];
 		char other_mapname[32];
 		int i = 0;
 
-		do
-		{
+		do {
 			++i;
 			snprintf(newname, ARRAYLENGTH(newname), "%d_%d_%d_%d", i, nd->bl.m, nd->bl.x, nd->bl.y);
-		}
-		while( npc_name2id(newname) != NULL );
+		} while( npc_name2id(newname) != NULL );
 
 		strcpy(this_mapname, (nd->bl.m==-1?"(not on a map)":mapindex_id2name(map[nd->bl.m].index)));
 		strcpy(other_mapname, (dnd->bl.m==-1?"(not on a map)":mapindex_id2name(map[dnd->bl.m].index)));
@@ -1946,6 +1959,31 @@ static void npc_parsename(struct npc_data* nd, const char* name, const char* sta
 		ShowDebug("this npc:\n   display name '%s'\n   unique name '%s'\n   map=%s, x=%d, y=%d\n", nd->name, nd->exname, this_mapname, nd->bl.x, nd->bl.y);
 		ShowDebug("other npc:\n   display name '%s'\n   unique name '%s'\n   map=%s, x=%d, y=%d\n", dnd->name, dnd->exname, other_mapname, dnd->bl.x, dnd->bl.y);
 		safestrncpy(nd->exname, newname, sizeof(nd->exname));
+	}
+	
+	if( npc_last_path != filepath ) {
+		struct npc_path_data * npd = NULL;
+		
+		if( !(npd = strdb_get(npc_path_db,filepath) ) ) {
+			CREATE(npd, struct npc_path_data, 1);
+			strdb_put(npc_path_db, filepath, npd);
+			
+			CREATE(npd->path, char, strlen(filepath)+1);
+			safestrncpy(npd->path, filepath, strlen(filepath)+1);
+			
+			npd->references = 1;
+		}
+		
+		nd->path = npd->path;
+		npd->references++;
+
+		npc_last_npd = npd;
+		npc_last_ref = npd->path;
+		npc_last_path = (char*) filepath;
+	} else {
+		nd->path = npc_last_ref;
+		if( npc_last_npd )
+			npc_last_npd->references++;
 	}
 }
 
@@ -3500,7 +3538,19 @@ void npc_read_event_script(void)
 			ShowInfo("%s: %d '%s' events.\n", config[i].name, script_event[i].event_count, config[i].event_name);
 	}
 }
-
+void npc_clear_pathlist(void) {
+	struct npc_path_data *npd = NULL;
+	DBIterator *path_list = db_iterator(npc_path_db);
+	
+	
+	/* free all npc_path_data filepaths */
+	for( npd = dbi_first(path_list); dbi_exists(path_list); npd = dbi_next(path_list) ) {
+		if( npd->path )
+			aFree(npd->path);
+	}
+	
+	dbi_destroy(path_list);
+}
 int npc_reload(void) {
 	struct npc_src_list *nsl;
 	int m, i;
@@ -3508,9 +3558,13 @@ int npc_reload(void) {
 	struct s_mapiterator* iter;
 	struct block_list* bl;
 
+	npc_clear_pathlist();
+	
+	db_clear(npc_path_db);
+
 	db_clear(npcname_db);
 	db_clear(ev_db);
-
+	
 	//Remove all npcs/mobs. [Skotlex]
 
 	iter = mapit_geteachiddb();
@@ -3588,6 +3642,22 @@ int npc_reload(void) {
 	}
 	return 0;
 }
+bool npc_unloadfile( const char* path ) {
+	DBIterator * iter = db_iterator(npcname_db);
+	struct npc_data* nd = NULL;
+	bool found = false;
+	
+	for( nd = dbi_first(iter); dbi_exists(iter); nd = dbi_next(iter) ) {
+		if( nd->path && strcasecmp(nd->path,path) == 0 ) {
+			found = true;
+			npc_unload(nd, true);
+		}
+	}
+	
+	dbi_destroy(iter);
+	
+	return found;
+}
 void do_clear_npc(void) {
 	db_clear(npcname_db);
 	db_clear(ev_db);
@@ -3596,9 +3666,10 @@ void do_clear_npc(void) {
  * I—¹
  *------------------------------------------*/
 int do_final_npc(void) {
-
+	npc_clear_pathlist();
 	ev_db->destroy(ev_db, NULL);
 	npcname_db->destroy(npcname_db, NULL);
+	npc_path_db->destroy(npc_path_db, NULL);
 	ers_destroy(timer_event_ers);
 	npc_clearsrcfile();
 
@@ -3655,8 +3726,10 @@ int do_init_npc(void)
 
 	ev_db = strdb_alloc((DBOptions)(DB_OPT_DUP_KEY|DB_OPT_RELEASE_DATA),2*NAME_LENGTH+2+1);
 	npcname_db = strdb_alloc(DB_OPT_BASE,NAME_LENGTH);
-
+	npc_path_db = strdb_alloc(DB_OPT_BASE|DB_OPT_DUP_KEY|DB_OPT_RELEASE_DATA,80);
+	
 	timer_event_ers = ers_new(sizeof(struct timer_event_data));
+	
 	// process all npc files
 	ShowStatus("Loading NPCs...\r");
 	for( file = npc_src_files; file != NULL; file = file->next ) {
@@ -3700,6 +3773,6 @@ int do_init_npc(void)
 	fake_nd->u.scr.timerid = INVALID_TIMER;
 	map_addiddb(&fake_nd->bl);
 	// End of initialization
-
+	
 	return 0;
 }
