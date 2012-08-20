@@ -1192,8 +1192,10 @@ const char* parse_variable(const char* p) {
 		add_scriptl(word);
 	}
 	
-	if( type == C_ADD_PP || type == C_SUB_PP ) {// incremental operator for the method
+	if( type != C_EQ )
 		add_scriptc(C_REF);
+	
+	if( type == C_ADD_PP || type == C_SUB_PP ) {// incremental operator for the method
 		add_scripti(1);
 		add_scriptc(type == C_ADD_PP ? C_ADD : C_SUB);
 	} else {// process the value as an expression
@@ -3398,7 +3400,7 @@ static void script_check_buildin_argtype(struct script_state* st, int func)
 				case 'r':
 					if( !data_isreference(data) )
 					{// variables
-						ShowWarning("Unexpected type for argument %d. Expected variable.\n", idx-1);
+						ShowWarning("Unexpected type for argument %d. Expected variable, got %s.\n", idx-1,script_op2name(data->type));
 						script_reportdata(data);
 						invalid++;
 					}
@@ -5006,43 +5008,73 @@ BUILDIN_FUNC(warp)
  *------------------------------------------*/
 static int buildin_areawarp_sub(struct block_list *bl,va_list ap)
 {
-	int x,y;
-	unsigned int map;
-	map=va_arg(ap, unsigned int);
-	x=va_arg(ap,int);
-	y=va_arg(ap,int);
-	if(map == 0)
+	int x2,y2,x3,y3;
+	unsigned int index;
+	
+	index = va_arg(ap,unsigned int);
+	x2 = va_arg(ap,int);
+	y2 = va_arg(ap,int);
+	x3 = va_arg(ap,int);
+	y3 = va_arg(ap,int);
+	
+	if(index == 0)
 		pc_randomwarp((TBL_PC *)bl,CLR_TELEPORT);
+	else if(x3 && y3) {
+		int max, tx, ty, j = 0;
+		
+		// choose a suitable max number of attempts
+		if( (max = (y3-y2+1)*(x3-x2+1)*3) > 1000 )
+			max = 1000;
+		
+		// find a suitable map cell
+		do {
+			tx = rnd()%(x3-x2+1)+x2;
+			ty = rnd()%(y3-y2+1)+y2;
+			j++;
+		} while( map_getcell(index,tx,ty,CELL_CHKNOPASS) && j < max );
+		
+		pc_setpos((TBL_PC *)bl,index,tx,ty,CLR_OUTSIGHT);
+	}
 	else
-		pc_setpos((TBL_PC *)bl,map,x,y,CLR_OUTSIGHT);
+		pc_setpos((TBL_PC *)bl,index,x2,y2,CLR_OUTSIGHT);
 	return 0;
 }
 BUILDIN_FUNC(areawarp)
 {
-	int x,y,m;
+	int m, x0,y0,x1,y1, x2,y2,x3=0,y3=0;
 	unsigned int index;
 	const char *str;
 	const char *mapname;
-	int x0,y0,x1,y1;
 
-	mapname=script_getstr(st,2);
-	x0=script_getnum(st,3);
-	y0=script_getnum(st,4);
-	x1=script_getnum(st,5);
-	y1=script_getnum(st,6);
-	str=script_getstr(st,7);
-	x=script_getnum(st,8);
-	y=script_getnum(st,9);
+	mapname = script_getstr(st,2);
+	x0  = script_getnum(st,3);
+	y0  = script_getnum(st,4);
+	x1  = script_getnum(st,5);
+	y1  = script_getnum(st,6);
+	str = script_getstr(st,7);
+	x2  = script_getnum(st,8);
+	y2  = script_getnum(st,9);
+	
+	if( script_hasdata(st,10) && script_hasdata(st,11) ) { // Warp area to area
+		if( (x3 = script_getnum(st,10)) < 0 || (y3 = script_getnum(st,11)) < 0 ){
+			x3 = 0;
+			y3 = 0;
+		} else if( x3 && y3 ) {
+			// normalize x3/y3 coordinates
+			if( x3 < x2 ) swap(x3,x2);
+			if( y3 < y2 ) swap(y3,y2);
+		}
+	}
 
-	if( (m=map_mapname2mapid(mapname))< 0)
+	if( (m = map_mapname2mapid(mapname)) < 0 )
 		return 0;
 
-	if(strcmp(str,"Random")==0)
+	if( strcmp(str,"Random") == 0 )
 		index = 0;
-	else if(!(index=mapindex_name2id(str)))
+	else if( !(index=mapindex_name2id(str)) )
 		return 0;
 
-	map_foreachinarea(buildin_areawarp_sub, m,x0,y0,x1,y1,BL_PC, index,x,y);
+	map_foreachinarea(buildin_areawarp_sub, m,x0,y0,x1,y1, BL_PC, index,x2,y2,x3,y3);
 	return 0;
 }
 
@@ -7686,6 +7718,7 @@ BUILDIN_FUNC(bonus)
 		case SP_SKILL_COOLDOWN:
 		case SP_SKILL_FIXEDCAST:
 		case SP_SKILL_VARIABLECAST:
+		case SP_VARCASTRATE:
 		case SP_SKILL_USE_SP:
 			// these bonuses support skill names
 			val1 = ( script_isstring(st,3) ? skill_name2id(script_getstr(st,3)) : script_getnum(st,3) );
@@ -11018,8 +11051,7 @@ BUILDIN_FUNC(getequipcardcnt)
 /// Removes all cards from the item found in the specified equipment slot of the invoking character,
 /// and give them to the character. If any cards were removed in this manner, it will also show a success effect.
 /// successremovecards <slot>;
-BUILDIN_FUNC(successremovecards)
-{
+BUILDIN_FUNC(successremovecards) {
 	int i=-1,j,c,cardflag=0;
 
 	TBL_PC* sd = script_rid2sd(st);
@@ -11035,18 +11067,14 @@ BUILDIN_FUNC(successremovecards)
 	if(itemdb_isspecial(sd->status.inventory[i].card[0])) 
 		return 0;
 
-	for( c = sd->inventory_data[i]->slot - 1; c >= 0; --c )
-	{
-		if( sd->status.inventory[i].card[c] && itemdb_type(sd->status.inventory[i].card[c]) == IT_CARD )
-		{// extract this card from the item
+	for( c = sd->inventory_data[i]->slot - 1; c >= 0; --c ) {
+		if( sd->status.inventory[i].card[c] && itemdb_type(sd->status.inventory[i].card[c]) == IT_CARD ) {// extract this card from the item
 			int flag;
 			struct item item_tmp;
+			memset(&item_tmp,0,sizeof(item_tmp));
 			cardflag = 1;
-			item_tmp.id=0,item_tmp.nameid=sd->status.inventory[i].card[c];
-			item_tmp.equip=0,item_tmp.identify=1,item_tmp.refine=0;
-			item_tmp.attribute=0,item_tmp.expire_time=0;
-			for (j = 0; j < MAX_SLOTS; j++)
-				item_tmp.card[j]=0;
+			item_tmp.nameid   = sd->status.inventory[i].card[c];
+			item_tmp.identify = 1;
 
 			if((flag=pc_additem(sd,&item_tmp,1,LOG_TYPE_SCRIPT))){	// 持てないならドロップ
 				clif_additem(sd,0,0,flag);
@@ -11055,15 +11083,17 @@ BUILDIN_FUNC(successremovecards)
 		}
 	}
 
-	if(cardflag == 1)
-	{	// カードを取り除いたアイテム所得
+	if(cardflag == 1) {// カードを取り除いたアイテム所得
 		int flag;
 		struct item item_tmp;
-		item_tmp.id=0,item_tmp.nameid=sd->status.inventory[i].nameid;
-		item_tmp.equip=0,item_tmp.identify=1,item_tmp.refine=sd->status.inventory[i].refine;
-		item_tmp.attribute=sd->status.inventory[i].attribute,item_tmp.expire_time=sd->status.inventory[i].expire_time;
-		for (j = 0; j < sd->inventory_data[i]->slot; j++)
-			item_tmp.card[j]=0;
+		memset(&item_tmp,0,sizeof(item_tmp));
+		
+		item_tmp.nameid      = sd->status.inventory[i].nameid;
+		item_tmp.identify    = 1;
+		item_tmp.refine      = sd->status.inventory[i].refine;
+		item_tmp.attribute   = sd->status.inventory[i].attribute;
+		item_tmp.expire_time = sd->status.inventory[i].expire_time;
+
 		for (j = sd->inventory_data[i]->slot; j < MAX_SLOTS; j++)
 			item_tmp.card[j]=sd->status.inventory[i].card[j];
 
@@ -11084,8 +11114,7 @@ BUILDIN_FUNC(successremovecards)
 /// <type>=1 : will keep the item, but destroy the cards.
 /// <type>=2 : will keep the cards, but destroy the item.
 /// <type>=? : will just display the failure effect.
-BUILDIN_FUNC(failedremovecards)
-{
+BUILDIN_FUNC(failedremovecards) {
 	int i=-1,j,c,cardflag=0;
 
 	TBL_PC* sd = script_rid2sd(st);
@@ -11101,21 +11130,18 @@ BUILDIN_FUNC(failedremovecards)
 	if(itemdb_isspecial(sd->status.inventory[i].card[0]))
 		return 0;
 
-	for( c = sd->inventory_data[i]->slot - 1; c >= 0; --c )
-	{
-		if( sd->status.inventory[i].card[c] && itemdb_type(sd->status.inventory[i].card[c]) == IT_CARD )
-		{
+	for( c = sd->inventory_data[i]->slot - 1; c >= 0; --c ) {
+		if( sd->status.inventory[i].card[c] && itemdb_type(sd->status.inventory[i].card[c]) == IT_CARD ) {
 			cardflag = 1;
 
-			if(typefail == 2)
-			{// add cards to inventory, clear 
+			if(typefail == 2) {// add cards to inventory, clear 
 				int flag;
 				struct item item_tmp;
-				item_tmp.id=0,item_tmp.nameid=sd->status.inventory[i].card[c];
-				item_tmp.equip=0,item_tmp.identify=1,item_tmp.refine=0;
-				item_tmp.attribute=0,item_tmp.expire_time=0;
-				for (j = 0; j < MAX_SLOTS; j++)
-					item_tmp.card[j]=0;
+				
+				memset(&item_tmp,0,sizeof(item_tmp));
+				
+				item_tmp.nameid   = sd->status.inventory[i].card[c];
+				item_tmp.identify = 1;
 
 				if((flag=pc_additem(sd,&item_tmp,1,LOG_TYPE_SCRIPT))){
 					clif_additem(sd,0,0,flag);
@@ -11125,22 +11151,25 @@ BUILDIN_FUNC(failedremovecards)
 		}
 	}
 
-	if(cardflag == 1)
-	{
+	if(cardflag == 1) {
 		if(typefail == 0 || typefail == 2){	// 武具損失
 			pc_delitem(sd,i,1,0,2,LOG_TYPE_SCRIPT);
 		}
 		if(typefail == 1){	// カードのみ損失（武具を返す）
 			int flag;
 			struct item item_tmp;
-			item_tmp.id=0,item_tmp.nameid=sd->status.inventory[i].nameid;
-			item_tmp.equip=0,item_tmp.identify=1,item_tmp.refine=sd->status.inventory[i].refine;
-			item_tmp.attribute=sd->status.inventory[i].attribute,item_tmp.expire_time=sd->status.inventory[i].expire_time;
+			
+			memset(&item_tmp,0,sizeof(item_tmp));
+			
+			item_tmp.nameid      = sd->status.inventory[i].nameid;
+			item_tmp.identify    = 1;
+			item_tmp.refine      = sd->status.inventory[i].refine;
+			item_tmp.attribute   = sd->status.inventory[i].attribute;
+			item_tmp.expire_time = sd->status.inventory[i].expire_time;
 
-			for (j = 0; j < sd->inventory_data[i]->slot; j++)
-				item_tmp.card[j]=0;
 			for (j = sd->inventory_data[i]->slot; j < MAX_SLOTS; j++)
 				item_tmp.card[j]=sd->status.inventory[i].card[j];
+			
 			pc_delitem(sd,i,1,0,2,LOG_TYPE_SCRIPT);
 
 			if((flag=pc_additem(sd,&item_tmp,1,LOG_TYPE_SCRIPT))){
@@ -13303,19 +13332,17 @@ BUILDIN_FUNC(charislower)
 //=======================================================
 // charat <str>, <index>
 //-------------------------------------------------------
-BUILDIN_FUNC(charat)
-{
+BUILDIN_FUNC(charat) {
 	const char *str = script_getstr(st,2);
 	int pos = script_getnum(st,3);
-	char *output;
-
-	output = (char*)aMalloc(2*sizeof(char));
-	output[0] = '\0';
-
-	if(str && pos >= 0 && (unsigned int)pos < strlen(str))
-		sprintf(output, "%c", str[pos]);
-
-	script_pushstr(st, output);
+	
+	if( pos >= 0 && (unsigned int)pos < strlen(str) ) {
+		char output[2];
+		output[0] = str[pos];
+		output[1] = '\0';
+		script_pushstrcopy(st, output);
+	} else
+		script_pushconststr(st, "");
 	return 0;
 }
 
@@ -14216,22 +14243,18 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 	const char* query;
 	struct script_data* data;
 	const char* name;
-	int max_rows = SCRIPT_MAX_ARRAYSIZE;// maximum number of rows
+	int max_rows = SCRIPT_MAX_ARRAYSIZE; // maximum number of rows
 	int num_vars;
 	int num_cols;
 
 	// check target variables
-	for( i = 3; script_hasdata(st,i); ++i )
-	{
+	for( i = 3; script_hasdata(st,i); ++i ) {
 		data = script_getdata(st, i);
-		if( data_isreference(data) && reference_tovariable(data) )
-		{// it's a variable
+		if( data_isreference(data) ) { // it's a variable
 			name = reference_getname(data);
-			if( not_server_variable(*name) && sd == NULL )
-			{// requires a player
+			if( not_server_variable(*name) && sd == NULL ) { // requires a player
 				sd = script_rid2sd(st);
-				if( sd == NULL )
-				{// no player attached
+				if( sd == NULL ) { // no player attached
 					script_reportdata(data);
 					st->state = END;
 					return 1;
@@ -14239,9 +14262,7 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 			}
 			if( not_array_variable(*name) )
 				max_rows = 1;// not an array, limit to one row
-		}
-		else
-		{
+		} else {
 			ShowError("script:query_sql: not a variable\n");
 			script_reportdata(data);
 			st->state = END;
@@ -14253,15 +14274,13 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 	// Execute the query
 	query = script_getstr(st,2);
 
-	if( SQL_ERROR == Sql_QueryStr(handle, query) )
-	{
+	if( SQL_ERROR == Sql_QueryStr(handle, query) ) {
 		Sql_ShowDebug(handle);
 		script_pushint(st, 0);
 		return 1;
 	}
 
-	if( Sql_NumRows(handle) == 0 )
-	{// No data received
+	if( Sql_NumRows(handle) == 0 ) { // No data received
 		Sql_FreeResult(handle);
 		script_pushint(st, 0);
 		return 0;
@@ -14269,22 +14288,17 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 
 	// Count the number of columns to store
 	num_cols = Sql_NumColumns(handle);
-	if( num_vars < num_cols )
-	{
+	if( num_vars < num_cols ) {
 		ShowWarning("script:query_sql: Too many columns, discarding last %u columns.\n", (unsigned int)(num_cols-num_vars));
 		script_reportsrc(st);
-	}
-	else if( num_vars > num_cols )
-	{
+	} else if( num_vars > num_cols ) {
 		ShowWarning("script:query_sql: Too many variables (%u extra).\n", (unsigned int)(num_vars-num_cols));
 		script_reportsrc(st);
 	}
 
 	// Store data
-	for( i = 0; i < max_rows && SQL_SUCCESS == Sql_NextRow(handle); ++i )
-	{
-		for( j = 0; j < num_vars; ++j )
-		{
+	for( i = 0; i < max_rows && SQL_SUCCESS == Sql_NextRow(handle); ++i ) {
+		for( j = 0; j < num_vars; ++j ) {
 			char* str = NULL;
 
 			if( j < num_cols )
@@ -14298,8 +14312,7 @@ int buildin_query_sql_sub(struct script_state* st, Sql* handle)
 				setd_sub(st, sd, name, i, (void *)__64BPRTSIZE((str?atoi(str):0)), reference_getref(data));
 		}
 	}
-	if( i == max_rows && max_rows < Sql_NumRows(handle) )
-	{
+	if( i == max_rows && max_rows < Sql_NumRows(handle) ) {
 		ShowWarning("script:query_sql: Only %d/%u rows have been stored.\n", max_rows, (unsigned int)Sql_NumRows(handle));
 		script_reportsrc(st);
 	}
@@ -16874,20 +16887,13 @@ BUILDIN_FUNC(checkre)
 			#endif
 			break;
 		case 5:
-			#ifdef RENEWAL_CAST_VMIN
-				script_pushint(st, 1);
-			#else
-				script_pushint(st, 0);
-			#endif
-			break;
-		case 6:
 			#ifdef RENEWAL_EDP
 				script_pushint(st, 1);
 			#else
 				script_pushint(st, 0);
 			#endif
 			break;
-		case 7:
+		case 6:
 			#ifdef RENEWAL_ASPD
 				script_pushint(st, 1);
 			#else
@@ -16930,7 +16936,7 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(jobname,"i"),
 	BUILDIN_DEF(input,"r??"),
 	BUILDIN_DEF(warp,"sii"),
-	BUILDIN_DEF(areawarp,"siiiisii"),
+	BUILDIN_DEF(areawarp,"siiiisii??"),
 	BUILDIN_DEF(warpchar,"siii"), // [LuzZza]
 	BUILDIN_DEF(warpparty,"siii?"), // [Fredzilla] [Paradox924X]
 	BUILDIN_DEF(warpguild,"siii"), // [Fredzilla]

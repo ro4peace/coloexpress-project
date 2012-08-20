@@ -1587,6 +1587,10 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 
 		if(sd && flag.arrow)
 			hitrate += sd->bonus.arrow_hit;
+#ifdef RENEWAL
+		if( sd ) //in Renewal hit bonus from Vultures Eye is not anymore shown in status window
+			hitrate += pc_checkskill(sd,AC_VULTURE);
+#endif
 		if(skill_num)
 			switch(skill_num)
 		{	//Hit skill modifiers
@@ -2630,7 +2634,7 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 			// FIX ME: Should Rolling Cutter be affected by EDP?
 				switch(skill_num){
 					case AS_SPLASHER:       case AS_VENOMKNIFE:
-					case AS_GRIMTOOTH:	case GC_ROLLINGCUTTER:
+					case AS_GRIMTOOTH:      case GC_ROLLINGCUTTER:
 					break;
 #ifndef RENEWAL_EDP
 					case ASC_BREAKER:       case ASC_METEORASSAULT: break;
@@ -2640,10 +2644,9 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src,struct blo
 					case GC_COUNTERSLASH:
 					case GC_CROSSIMPACT:
 						ATK_RATE(50); // only modifier is halved but still benefit with the damage bonus
-						break;
 #endif
 					default:
-						ATK_ADDRATE(sc->data[SC_EDP]->val3); 
+						ATK_ADDRATE(sc->data[SC_EDP]->val3);
 				}
 			}
 		}
@@ -4259,6 +4262,10 @@ struct Damage battle_calc_misc_attack(struct block_list *src,struct block_list *
 			}
 
 			hitrate+= sstatus->hit - flee;
+#ifdef RENEWAL
+			if( sd ) //in Renewal hit bonus from Vultures Eye is not anymore shown in status window
+				hitrate += pc_checkskill(sd,AC_VULTURE);
+#endif
 			hitrate = cap_value(hitrate, battle_config.min_hitrate, battle_config.max_hitrate);
 
 			if(rnd()%100 < hitrate)
@@ -4677,6 +4684,12 @@ enum damage_lv battle_weapon_attack(struct block_list* src, struct block_list* t
 								 skill_get_time(MO_CALLSPIRITS, sc->data[SC_GT_ENERGYGAIN]->val1),
 								 sc->data[SC_GT_ENERGYGAIN]->val1);
 		}
+		if( tsc && tsc->data[SC_GT_ENERGYGAIN] ) {
+			if( tsd && rnd()%100 < 10 + 5 * tsc->data[SC_GT_ENERGYGAIN]->val1)
+				pc_addspiritball(tsd,
+								 skill_get_time(MO_CALLSPIRITS, tsc->data[SC_GT_ENERGYGAIN]->val1),
+								 tsc->data[SC_GT_ENERGYGAIN]->val1);
+		}
 
 	}
 
@@ -4810,12 +4823,42 @@ enum damage_lv battle_weapon_attack(struct block_list* src, struct block_list* t
 			sd->status.skill[sc->data[SC__AUTOSHADOWSPELL]->val1].id != 0 && sd->status.skill[sc->data[SC__AUTOSHADOWSPELL]->val1].flag == SKILL_FLAG_PLAGIARIZED )
 		{
 			int r_skill = sd->status.skill[sc->data[SC__AUTOSHADOWSPELL]->val1].id,
-				r_lv = sc->data[SC__AUTOSHADOWSPELL]->val2;
+				r_lv = sc->data[SC__AUTOSHADOWSPELL]->val2, type;
 
 			if (r_skill != AL_HOLYLIGHT && r_skill != PR_MAGNUS) {
+				if( (type = skill_get_casttype(r_skill)) == CAST_GROUND ) {
+					int maxcount = 0;
+
+					if( !(BL_PC&battle_config.skill_reiteration) &&
+						skill_get_unit_flag(r_skill)&UF_NOREITERATION )
+							type = -1;
+
+					if( BL_PC&battle_config.skill_nofootset &&
+						skill_get_unit_flag(r_skill)&UF_NOFOOTSET )
+							type = -1;
+
+					if( BL_PC&battle_config.land_skill_limit &&
+						(maxcount = skill_get_maxcount(r_skill, r_lv)) > 0
+					  ) {
+						int v;
+						for(v=0;v<MAX_SKILLUNITGROUP && sd->ud.skillunit[v] && maxcount;v++) {
+							if(sd->ud.skillunit[v]->skill_id == r_skill)
+								maxcount--;
+						}
+						if( maxcount == 0 )
+							type = -1;
+					}
+
+					if( type != CAST_GROUND ){
+							clif_skill_fail(sd,r_skill,USESKILL_FAIL_LEVEL,0);
+							map_freeblock_unlock();
+							return wd.dmg_lv;
+					}
+				}
+
 				sd->state.autocast = 1;
 				skill_consume_requirement(sd,r_skill,r_lv,3);
-				switch( skill_get_casttype(r_skill) ) {
+				switch( type ) {
 				case CAST_GROUND:
 					skill_castend_pos2(src, target->x, target->y, r_skill, r_lv, tick, flag);
 					break;
@@ -5030,7 +5073,7 @@ int battle_check_target( struct block_list *src, struct block_list *target,int f
 						state |= BCT_ENEMY;
 						strip_enemy = 0;
 						break;
-					default:						
+					default:
 						if(su->group->skill_id == WM_REVERBERATION || su->group->skill_id == WM_POEMOFNETHERWORLD){
 							state |= BCT_ENEMY;
 							strip_enemy = 0;
@@ -5048,7 +5091,7 @@ int battle_check_target( struct block_list *src, struct block_list *target,int f
 		//Valid targets with no special checks here.
 		case BL_MER:
 		case BL_HOM:
-		case BL_ELEM:			
+		case BL_ELEM:
 			break;
 		//All else not specified is an invalid target.
 		default:
@@ -5548,6 +5591,7 @@ static const struct _battle_data {
 	{ "max_cloth_color",                    &battle_config.max_cloth_color,                 4,      0,      INT_MAX,        },
 	{ "pet_hair_style",                     &battle_config.pet_hair_style,                  100,    0,      INT_MAX,        },
 	{ "castrate_dex_scale",                 &battle_config.castrate_dex_scale,              150,    1,      INT_MAX,        },
+	{ "vcast_stat_scale",					&battle_config.vcast_stat_scale,			    530,    1,      INT_MAX,        },
 	{ "area_size",                          &battle_config.area_size,                       14,     0,      INT_MAX,        },
 	{ "zeny_from_mobs",                     &battle_config.zeny_from_mobs,                  0,      0,      1,              },
 	{ "mobs_level_up",                      &battle_config.mobs_level_up,                   0,      0,      1,              },

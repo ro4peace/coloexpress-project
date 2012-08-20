@@ -395,18 +395,17 @@ unsigned char pc_famerank(int char_id, int job)
 	return 0;
 }
 
-int pc_setrestartvalue(struct map_session_data *sd,int type)
-{
+int pc_setrestartvalue(struct map_session_data *sd,int type) {
 	struct status_data *status, *b_status;
 	nullpo_ret(sd);
 
 	b_status = &sd->base_status;
 	status = &sd->battle_status;
 
-	if (type&1)
-	{	//Normal resurrection
+	if (type&1) {	//Normal resurrection
 		status->hp = 1; //Otherwise status_heal may fail if dead.
-		status_heal(&sd->bl, b_status->hp, b_status->sp>status->sp?b_status->sp-status->sp:0, 1);
+		status_heal(&sd->bl, b_status->hp, 0, 1);
+		status_set_sp(&sd->bl, b_status->sp, 1);
 	} else { //Just for saving on the char-server (with values as if respawned)
 		sd->status.hp = b_status->hp;
 		sd->status.sp = (status->sp < b_status->sp)?b_status->sp:status->sp;
@@ -849,6 +848,10 @@ int pc_isequip(struct map_session_data *sd,int n)
 		return 0;
 	if(item->elv && sd->status.base_level < (unsigned int)item->elv)
 		return 0;
+#ifdef RENEWAL
+	if(item->elvmax && sd->status.base_level > (unsigned int)item->elvmax)
+		return 0;
+#endif
 	if(item->sex != 2 && sd->status.sex != item->sex)
 		return 0;
 	if(!map_flag_vs(sd->bl.m) && ((item->flag.no_equip&1) || !pc_isAllowedCardOn(sd,item->slot,n,1)))
@@ -2595,11 +2598,11 @@ int pc_bonus(struct map_session_data *sd,int type,int val)
 		break;
 	case SP_FIXCASTRATE:
 		if(sd->state.lr_flag != 2)
-			sd->fixcastrate+=val;
+			sd->bonus.fixcastrate -= val;
 		break;
 	case SP_VARCASTRATE:
 		if(sd->state.lr_flag != 2)
-			sd->varcastrate+=val;
+			sd->bonus.varcastrate -= val;
 		break;
 	default:
 		ShowWarning("pc_bonus: unknown type %d %d !\n",type,val);
@@ -3129,6 +3132,22 @@ int pc_bonus2(struct map_session_data *sd,int type,int type2,int val)
 		else {
 			sd->skillvarcast[i].id = type2;
 			sd->skillvarcast[i].val = val;
+		}
+		break;
+	case SP_VARCASTRATE:
+		if(sd->state.lr_flag == 2)
+			break;
+		ARR_FIND(0, ARRAYLENGTH(sd->skillcast), i, sd->skillcast[i].id == 0 || sd->skillcast[i].id == type2);
+		if (i == ARRAYLENGTH(sd->skillcast))
+		{	
+			ShowDebug("run_script: bonus2 bVariableCastrate reached it's limit (%d skills per character), bonus skill %d (+%d%%) lost.\n",ARRAYLENGTH(sd->skillcast), type2, val);
+			break;
+		}
+		if(sd->skillcast[i].id == type2)
+			sd->skillcast[i].val -= val;
+		else {
+			sd->skillcast[i].id = type2;
+			sd->skillcast[i].val -= val;
 		}
 		break;
 	case SP_SKILL_USE_SP: //bonus2 bSkillUseSP,n,x;
@@ -4067,6 +4086,11 @@ int pc_isUseitem(struct map_session_data *sd,int n)
 	//Required level check
 	if(item->elv && sd->status.base_level < (unsigned int)item->elv)
 		return 0;
+	
+#ifdef RENEWAL
+	if(item->elvmax && sd->status.base_level > (unsigned int)item->elvmax)
+		return 0;
+#endif
 
 	//Not equipable by class. [Skotlex]
 	if (!(
@@ -5412,12 +5436,12 @@ int pc_follow(struct map_session_data *sd,int target_id)
 	return 0;
 }
 
-int pc_checkbaselevelup(struct map_session_data *sd)
-{
+int pc_checkbaselevelup(struct map_session_data *sd) {
 	unsigned int next = pc_nextbaseexp(sd);
 
 	if (!next || sd->status.base_exp < next)
 		return 0;
+	
 	do {
 		sd->status.base_exp -= next;
 		//Kyoki pointed out that the max overcarry exp is the exp needed for the previous level -1. [Skotlex]
@@ -5440,8 +5464,7 @@ int pc_checkbaselevelup(struct map_session_data *sd)
 	status_calc_pc(sd,0);
 	status_percent_heal(&sd->bl,100,100);
 
-	if((sd->class_&MAPID_UPPERMASK) == MAPID_SUPER_NOVICE)
-	{
+	if((sd->class_&MAPID_UPPERMASK) == MAPID_SUPER_NOVICE) {
 		sc_start(&sd->bl,status_skill2sc(PR_KYRIE),100,1,skill_get_time(PR_KYRIE,1));
 		sc_start(&sd->bl,status_skill2sc(PR_IMPOSITIO),100,1,skill_get_time(PR_IMPOSITIO,1));
 		sc_start(&sd->bl,status_skill2sc(PR_MAGNIFICAT),100,1,skill_get_time(PR_MAGNIFICAT,1));
@@ -5449,9 +5472,7 @@ int pc_checkbaselevelup(struct map_session_data *sd)
 		sc_start(&sd->bl,status_skill2sc(PR_SUFFRAGIUM),100,1,skill_get_time(PR_SUFFRAGIUM,1));
 		if (sd->state.snovice_dead_flag)
 			sd->state.snovice_dead_flag = 0; //Reenable steelbody resurrection on dead.
-	} else
-	if( (sd->class_&MAPID_BASEMASK) == MAPID_TAEKWON )
-	{
+	} else if( (sd->class_&MAPID_BASEMASK) == MAPID_TAEKWON ) {
 		sc_start(&sd->bl,status_skill2sc(AL_INCAGI),100,10,600000);
 		sc_start(&sd->bl,status_skill2sc(AL_BLESSING),100,10,600000);
 	}
@@ -5460,9 +5481,23 @@ int pc_checkbaselevelup(struct map_session_data *sd)
 
 	if(sd->status.party_id)
 		party_send_levelup(sd);
+	
+	pc_baselevelchanged(sd);
 	return 1;
 }
 
+void pc_baselevelchanged(struct map_session_data *sd) {
+#ifdef RENEWAL
+	int i;
+	for( i = 0; i < EQI_MAX; i++ ) {
+		if( sd->equip_index[i] >= 0 ) {
+			if( sd->inventory_data[ sd->equip_index[i] ]->elvmax && sd->status.base_level > (unsigned int)sd->inventory_data[ sd->equip_index[i] ]->elvmax )
+				pc_unequipitem(sd, sd->equip_index[i], 3);
+		}
+	}
+#endif
+
+}
 int pc_checkjoblevelup(struct map_session_data *sd)
 {
 	unsigned int next = pc_nextjobexp(sd);
